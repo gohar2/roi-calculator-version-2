@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.logo{
+  width: 120px;
+  height: 80px;
+}
+.gap-10{
+  gap: 3rem;
+}
+
+.calculator-container {
+  grid-template-columns: 7fr 3fr;
+}
+
+.top-100{
+  top: 100px;
+}
+.w-1{
+  width: 1rem;
+}
+
+.h-1 {
+  height: 1rem;
+}
+
+.h-dot25{
+  height: 0.25rem;
+}
+
+.bg-black-333{
+  background-color: #333;
+}
+.text-black-333{
+  color: #333;
+}
+.bg-darkBlue{
+  background-color: #011F53;
+}
+.bg-lightGreen{
+  background-color: #6FBF4C;
+}
+.text-lightGreen{
+  color: #6FBF4C;
+}
+.text-darkBlue{
+  color: #011F53;
+}
+
+.detailed-breakdown-container{
+  grid-template-columns: 5fr 5fr;
+}
+
+.toggle-button-container{
+  background: #fafafa;
+    border-radius: 30px;
+    padding: 7px  10px;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-button-bg{
+  opacity: 1;
+  background-color: rgb(111 191 76) ;
+}
+
+@media screen and (max-width: 768px) {
+  .calculator-container {
+    grid-template-columns: 1fr;
+  }
+  .detailed-breakdown-container{
+    grid-template-columns: 1fr;
+  }
+}
+
+@media screen and (max-width: 427px) {
+  h1.calculator-heading{
+    font-size: 20px !important;
+  }
+}
