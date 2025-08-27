@@ -34,19 +34,19 @@ const ResultsPanel = ({ results }) => {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {/* <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 text-center">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 text-center">
           <Clock className="w-8 h-8 text-darkBlue mx-auto mb-2" />
           <p className="text-sm text-darkBlue font-medium">Payback Period</p>
           <p className="text-2xl font-bold text-darkBlue">
             {typeof results.paybackPeriod === 'number' ? `${results.paybackPeriod.toFixed(1)} months` : 'N/A'}
           </p>
           <p className="text-xs text-gray-500 mt-1">Calculated over 3 years</p>
-        </div> */}
+        </div>
         
         <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 text-center">
           <TrendingUp className="w-8 h-8 text-darkBlue mx-auto mb-2" />
           <p className="text-sm text-darkBlue font-medium">Internal Rate of Return</p>
-          <p className="text-2xl font-bold text-darkBlue">{results.irr ? `${results.irr.toFixed(1)}%` : 'N/A'}</p>
+          <p className="text-2xl font-bold text-darkBlue">{results.irr !== null ? `${Number(results.irr).toFixed(1)}%` : 'N/A'}</p>
           <p className="text-xs text-gray-500 mt-1">Calculated over 3 years</p>
         </div>
       </div>
