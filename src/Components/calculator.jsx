@@ -38,14 +38,14 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
     // Materials
     annualPartsGoalCurrent: 1000000,
     annualPartsGoalPost: 1000000,
-    machineUptimeCurrent: 83,
-    machineUptimePost: 90,
+    machineUptimeCurrent: 90,
+    machineUptimePost: 83,
     scrapPercentageCurrent: 5,
     scrapPercentagePost: 1,
     materialCostPerUnitCurrent: 12,
     materialCostPerUnitPost: 12,
-    outsourcedPartCostCurrent: 15,  // Cost per part when outsourcing (current state)
-    outsourcedPartCostPost: 12,     // Cost per part when outsourcing (post-install)
+    outsourcedPartCostCurrent: 35,  // Cost per part when outsourcing (current state)
+    outsourcedPartCostPost: 35,     // Cost per part when outsourcing (post-install)
     
     // Revenue
     
@@ -97,38 +97,34 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
     const totalTechniciansCostPost = calcInputs.techniciansPost * calcInputs.annualCostPerTechnicianPost;
     const totalLaborCostPost =  Math.round(totalOperatorsCostPost + totalTechniciansCostPost);
     
-    // Materials Calculations
-    // const totalPartsProducedGrossCurrent = calcInputs.annualPartsGoalCurrent * (calcInputs.machineUptimeCurrent / 100);
-    // const totalPartsProducedNetCurrent = totalPartsProducedGrossCurrent * (1 - calcInputs.scrapPercentageCurrent / 100);
-    // const annualMaterialCostCurrent = Math.round(totalPartsProducedGrossCurrent * calcInputs.materialCostPerUnitCurrent);
-    // const materialWasteCostCurrent = (totalPartsProducedGrossCurrent * calcInputs.scrapPercentageCurrent / 100) * calcInputs.materialCostPerUnitCurrent;
-    // const materialWasteCostCurrent = Math.round((totalPartsProducedGrossCurrent - totalPartsProducedNetCurrent) * calcInputs.materialCostPerUnitCurrent);
-
 
     // Materials Calculations with outsourcing handling
     const calculateMaterialCosts = (state) => {
-      const isOutsourced = state.materialCostPerUnit === 0;
+        // Handle outsourcing scenario (when materialCostPerUnit is 0)
+        if (state.materialCostPerUnit === 0) {
+            const totalCost = state.annualPartsGoal * state.outsourcedPartCost;
+            return {
+                totalPartsProduced: state.annualPartsGoal,
+                netPartsProduced: state.annualPartsGoal,
+                materialCost: Math.round(totalCost),
+                wasteCost: 0,
+                isOutsourced: true
+            };
+        }
 
-      if (isOutsourced) {
-        return {
-          totalPartsProduced: state.annualPartsGoal,  // All parts are purchased
-          netPartsProduced: state.annualPartsGoal,    // No scrap in outsourcing
-          materialCost: Math.round(state.annualPartsGoal * state.outsourcedPartCost), // Use outsourced part cost
-          wasteCost: 0  // No waste in outsourcing
-        };
-      } else {
+        // Handle in-house production scenario
         const totalPartsProduced = state.annualPartsGoal * (state.machineUptime / 100);
         const netPartsProduced = totalPartsProduced * (1 - state.scrapPercentage / 100);
-        const materialCost = Math.round(totalPartsProduced * state.materialCostPerUnit);
-        const wasteCost = Math.round((totalPartsProduced - netPartsProduced) * state.materialCostPerUnit);
-        
+        const materialCost = totalPartsProduced * state.materialCostPerUnit;
+        const wasteCost = (totalPartsProduced - netPartsProduced) * state.materialCostPerUnit;
+
         return {
-          totalPartsProduced,
-          netPartsProduced,
-          materialCost,
-          wasteCost
+            totalPartsProduced,
+            netPartsProduced,
+            materialCost: Math.round(materialCost),
+            wasteCost: Math.round(wasteCost),
+            isOutsourced: false
         };
-      }
     };
 
     // Calculate current state costs
@@ -160,19 +156,12 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
     const annualMaterialCostPost = postInstallCosts.materialCost;
     const materialWasteCostPost = postInstallCosts.wasteCost;
 
-    
-    // Savings Calculations
-    // const laborSavings = Math.round(totalLaborCostCurrent - totalLaborCostPost);
-    // const materialSavings = annualMaterialCostCurrent - annualMaterialCostPost;
-    // const materialWasteSavings = Math.round(materialWasteCostCurrent - materialWasteCostPost);
-    // const materialSavings = materialWasteSavings;
 
     // Savings Calculations
     const laborSavings = Math.round(totalLaborCostCurrent - totalLaborCostPost);
-    const materialSavings = Math.round(annualMaterialCostCurrent - annualMaterialCostPost);
-    const wasteSavings = Math.round(materialWasteCostCurrent - materialWasteCostPost);
+    const materialSavings = annualMaterialCostCurrent - annualMaterialCostPost;
+    const wasteSavings = materialWasteCostCurrent - materialWasteCostPost;
     const totalMaterialSavings = materialSavings + wasteSavings;
-
 
     const totalAnnualSavings = Math.round(laborSavings + totalMaterialSavings);
     // const revenueSavings = annualRevenuePost - annualRevenueCurrent;
