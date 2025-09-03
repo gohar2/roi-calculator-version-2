@@ -115,18 +115,33 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
     const currentTotalLaborCost = currentRegularLaborCost + currentOvertimeCost + currentTechnicianCost;
     const postTotalLaborCost = postRegularLaborCost + postOvertimeCost + postTechnicianCost;
 
-    // Material Calculations
+    // Material Calculations - Fixed Logic
     const currentMaterialWasteCost = calcInputs.annualPartsGoal * (calcInputs.scrapPercentageCurrent/100) * calcInputs.materialCostPerUnit;
     const postMaterialWasteCost = calcInputs.annualPartsGoal * (calcInputs.scrapPercentagePost/100) * calcInputs.materialCostPerUnit;
     const materialWasteSavings = currentMaterialWasteCost - postMaterialWasteCost;
 
-    // Effective production (accounting for uptime)
-    const currentEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimeCurrent/100);
-    const postEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimePost/100);
-
-    // Material costs for actual production
-    const currentMaterialCost = currentEffectiveProduction * calcInputs.materialCostPerUnit;
-    const postMaterialCost = postEffectiveProduction * calcInputs.materialCostPerUnit;
+    // Material costs for actual production - FIXED LOGIC
+    // For outsourced production (0% uptime), we still pay for the full annual parts goal
+    // For in-house production, we pay for what we can actually produce based on uptime
+    let currentMaterialCost, postMaterialCost;
+    
+    if (calcInputs.machineUptimeCurrent === 0) {
+      // Outsourced: Pay for all parts regardless of internal production capacity
+      currentMaterialCost = calcInputs.annualPartsGoal * calcInputs.materialCostPerUnit;
+    } else {
+      // In-house: Pay based on what we can actually produce
+      const currentEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimeCurrent/100);
+      currentMaterialCost = currentEffectiveProduction * calcInputs.materialCostPerUnit;
+    }
+    
+    if (calcInputs.machineUptimePost === 0) {
+      // Outsourced: Pay for all parts regardless of internal production capacity
+      postMaterialCost = calcInputs.annualPartsGoal * calcInputs.materialCostPerUnit;
+    } else {
+      // In-house: Pay based on what we can actually produce
+      const postEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimePost/100);
+      postMaterialCost = postEffectiveProduction * calcInputs.materialCostPerUnit;
+    }
 
     // Savings Calculations
     const currentTotalCosts = currentTotalLaborCost +  currentMaterialCost + currentMaterialWasteCost;
