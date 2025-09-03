@@ -32,20 +32,20 @@ const DetailedResults = ({ results }) => {
                 
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <span className="text-darkBlue">Total Labor Cost</span>
-                  <span className="text-center font-bold text-lightGreen">${results.totalLaborCostCurrent?.toLocaleString()}</span>
-                  <span className="text-center font-bold text-lightGreen">${results.totalLaborCostPost?.toLocaleString()}</span>
+                  <span className="text-center font-bold text-lightGreen">{formatCurrency(results.currentTotalLaborCost)}</span>
+                  <span className="text-center font-bold text-lightGreen">{formatCurrency(results.postTotalLaborCost)}</span>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <span className="text-darkBlue">Material Cost</span>
-                  <span className="text-center font-bold text-lightGreen">${results.annualMaterialCostCurrent?.toLocaleString()}</span>
-                  <span className="text-center font-bold text-lightGreen">${results.annualMaterialCostPost?.toLocaleString()}</span>
+                  <span className="text-center font-bold text-lightGreen">{formatCurrency(results.currentMaterialCost)}</span>
+                  <span className="text-center font-bold text-lightGreen">{formatCurrency(results.postMaterialCost)}</span>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <span className="text-darkBlue">Material Waste Cost</span>
-                  <span className="text-center font-bold text-lightGreen">${results.materialWasteCostCurrent?.toLocaleString()}</span>
-                  <span className="text-center font-bold text-lightGreen">${results.materialWasteCostPost?.toLocaleString()}</span>
+                  <span className="text-center font-bold text-lightGreen">{formatCurrency(results.currentMaterialWasteCost)}</span>
+                  <span className="text-center font-bold text-lightGreen">{formatCurrency(results.postMaterialWasteCost)}</span>
                 </div>
 
                 {/* <div className="grid grid-cols-3 gap-4 text-sm">
@@ -76,22 +76,22 @@ const DetailedResults = ({ results }) => {
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <span className="text-darkBlue">Year 1</span>
-                  <span className="text-right font-bold text-lightGreen">${results.year1CashFlow?.toLocaleString()}</span>
+                  <span className="text-right font-bold text-lightGreen">{formatCurrency(results.yearlyROI[0])}</span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <span className="text-darkBlue">Year 2</span>
-                  <span className="text-right font-bold text-lightGreen">${results.year2CashFlow?.toLocaleString()}</span>
+                  <span className="text-right font-bold text-lightGreen">{formatCurrency(results.yearlyROI[1])}</span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <span className="text-darkBlue">Year 3</span>
-                  <span className="text-right font-bold text-lightGreen">${results.year3CashFlow?.toLocaleString()}</span>
+                  <span className="text-right font-bold text-lightGreen">{formatCurrency(results.yearlyROI[2])}</span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm border-t pt-2">
-                  <span className="text-darkBlue font-medium">Net Cash Flow (Years 1–3)</span>
-                  <span className="text-right font-bold text-lightGreen">${results.netCashFlow?.toLocaleString()}</span>
+                  <span className="text-darkBlue font-medium">Total ROI (Years 1–3)</span>
+                  <span className="text-right font-bold text-lightGreen">{formatCurrency(results.totalROIOver3Years)}</span>
                 </div>
               </div>
             </div>

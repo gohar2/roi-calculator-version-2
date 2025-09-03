@@ -5,49 +5,85 @@ import DetailedResults from './DetailedResults';
 import ResultsPanel from './ResultsPanel';
 import InfoPopup from './InfoPopup';
 
+const validateInputs = (inputs) => {
+  const errors = [];
+  if (!inputs || typeof inputs !== 'object') {
+    errors.push("Inputs are missing or invalid");
+    return errors;
+  }
+
+  // Required fields (optional strictness)
+  // if (!inputs.annualPartsGoal || inputs.annualPartsGoal <= 0) {
+  //   errors.push("Annual parts goal must be greater than 0");
+  // }
+
+  // Validate percentages are between 0-100
+  if (inputs.scrapPercentageCurrent < 0 || inputs.scrapPercentageCurrent > 100) {
+    errors.push("Current scrap percentage must be between 0-100");
+  }
+
+  if (inputs.machineUptimeCurrent < 0 || inputs.machineUptimeCurrent > 100) {
+    errors.push("Machine uptime must be between 0-100");
+  }
+
+  // Validate labor inputs
+  if (inputs.hourlyWageOperator <= 0) {
+    errors.push("Hourly wage must be greater than 0");
+  }
+
+  // Validate investment
+  if (inputs.newEquipmentCost <= 0) {
+    errors.push("Equipment cost must be greater than 0");
+  }
+
+  return errors;
+};
+
+const validateCalculations = (results) => {
+  const warnings = [];
+  
+  // Check for unrealistic values
+  if (results.paybackPeriod && results.paybackPeriod > 10) {
+    warnings.push("Payback period exceeds 10 years - review assumptions");
+  }
+  
+  if (results.annualSavings < 0) {
+    warnings.push("Project shows negative savings - costs will increase");
+  }
+  
+  if (results.laborSavings < 0 && Math.abs(results.laborSavings) > results.materialSavings + results.materialWasteSavings) {
+    warnings.push("Labor cost increases exceed material savings");
+  }
+  
+  return warnings;
+}
+
 const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, setFormData, step, setStep}) => {
+  const [errors, setErrors] = useState([]);
+  const [warnings, setWarnings] = useState([]);
   const [inputs, setInputs] = useState({
     // Labor - Current
-    workShiftsCurrent: 1,
-    daysPerYearCurrent: 250,
-    hoursPerShiftCurrent: 8,
-    // weeksPerYearCurrent: 52,
+    workShifts: 1,
+    daysPerYear: 250,
+    hoursPerShift: 8,
     noOfOperatorsCurrent: 6,
-    // operatorHoursCurrent: 40,
-    annualOvertimeHoursperOperatorCurrent: 60,
-    overtimeRatePerHourCurrent: 35,
-    operatorAnnualCostPreOvertimeCurrent: 52000,
-    // annualCostPerOperatorCurrent: 52000,
+    noOfOperatorsPost: 8,
+    hourlyWageOperator: 15,
+    annualOvertimeHoursperOperator: 60,
+    overtimeRatePerHour: 35,
     techniciansCurrent: 0,
-    annualCostPerTechnicianCurrent: 75000,
-    
-    // Labor - Post Install
-    workShiftsPost: 1,
-    daysPerYearPost: 250,
-    hoursPerShiftPost: 8,
-    // weeksPerYearPost: 52,
-    noOfOperatorsPost: 1,
-    // operatorHoursPost: 40,
-    annualOvertimeHoursperOperatorPost: 60,
-    overtimeRatePerHourPost: 35,
-    operatorAnnualCostPreOvertimePost: 52000,
-    // annualCostPerOperatorPost: 52624,
     techniciansPost: 1,
-    annualCostPerTechnicianPost: 75000,
+    annualCostPerTechnician: 75000,
+    
     
     // Materials
-    annualPartsGoalCurrent: 1000000,
-    annualPartsGoalPost: 1000000,
+    annualPartsGoal: 1000000,
     machineUptimeCurrent: 90,
     machineUptimePost: 83,
     scrapPercentageCurrent: 5,
     scrapPercentagePost: 1,
-    materialCostPerUnitCurrent: 12,
-    materialCostPerUnitPost: 12,
-    outsourcedPartCostCurrent: 35,  // Cost per part when outsourcing (current state)
-    outsourcedPartCostPost: 35,     // Cost per part when outsourcing (post-install)
+    materialCostPerUnit: 12,
     
-    // Revenue
     
     // Capital Equipment
     newEquipmentCost: 50000
@@ -56,208 +92,91 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
   const [calcInputs, setCalcInputs] = useState(inputs);
   const [results, setResults] = useState({});
   const [showResults, setShowResults] = useState(false);
-
-  const calculateIRR = (cashFlows, guess = 0.1, maxIterations = 1000, tolerance = 1e-6) => {
-    let rate = guess;
-  
-    for (let i = 0; i < maxIterations; i++) {
-      let npv = 0;
-      let derivative = 0;
-  
-      for (let t = 0; t < cashFlows.length; t++) {
-        npv += cashFlows[t] / Math.pow(1 + rate, t);
-        if (t !== 0) {
-          derivative -= t * cashFlows[t] / Math.pow(1 + rate, t + 1);
-        }
-      }
-  
-      const newRate = rate - npv / derivative;
-      if (Math.abs(newRate - rate) < tolerance) {
-        return newRate;
-      }
-      rate = newRate;
-    }
-  
-    return NaN; // didn't converge
-  };
   
 
   // Calculate all metrics
   useEffect(() => {
-    // Use calcInputs instead of inputs for all calculations
-    const baseLaborCostCurrent = calcInputs.noOfOperatorsCurrent * calcInputs.operatorAnnualCostPreOvertimeCurrent;
-    const overtimeCostCurrent = calcInputs.noOfOperatorsCurrent * calcInputs.annualOvertimeHoursperOperatorCurrent * calcInputs.overtimeRatePerHourCurrent;
-    const totalOperatorsCostCurrent = baseLaborCostCurrent + overtimeCostCurrent;
-    const totalTechniciansCostCurrent = calcInputs.techniciansCurrent * calcInputs.annualCostPerTechnicianCurrent;
-    const totalLaborCostCurrent = Math.round(totalOperatorsCostCurrent + totalTechniciansCostCurrent);
-    
-    const baseLaborCostPost = calcInputs.noOfOperatorsPost * calcInputs.operatorAnnualCostPreOvertimePost;
-    const overtimeCostPost = calcInputs.noOfOperatorsPost * calcInputs.annualOvertimeHoursperOperatorPost * calcInputs.overtimeRatePerHourPost;
-    const totalOperatorsCostPost = baseLaborCostPost + overtimeCostPost;
-    const totalTechniciansCostPost = calcInputs.techniciansPost * calcInputs.annualCostPerTechnicianPost;
-    const totalLaborCostPost =  Math.round(totalOperatorsCostPost + totalTechniciansCostPost);
     
 
-    // Materials Calculations with outsourcing handling
-    const calculateMaterialCosts = (state) => {
-        // Handle outsourcing scenario (when materialCostPerUnit is 0)
-        if (state.materialCostPerUnit === 0) {
-            const totalCost = state.annualPartsGoal * state.outsourcedPartCost;
-            return {
-                totalPartsProduced: state.annualPartsGoal,
-                netPartsProduced: state.annualPartsGoal,
-                materialCost: Math.round(totalCost),
-                wasteCost: 0,
-                isOutsourced: true
-            };
-        }
+    // Regular labor costs
+    const totalWorkingHours = calcInputs.workShifts * calcInputs.daysPerYear * calcInputs.hoursPerShift;
+    const currentRegularLaborCost = calcInputs.noOfOperatorsCurrent * totalWorkingHours * calcInputs.hourlyWageOperator
+    const postRegularLaborCost = calcInputs.noOfOperatorsPost * totalWorkingHours * calcInputs.hourlyWageOperator
 
-        // Handle in-house production scenario
-        const totalPartsProduced = state.annualPartsGoal * (state.machineUptime / 100);
-        const netPartsProduced = totalPartsProduced * (1 - state.scrapPercentage / 100);
-        const materialCost = totalPartsProduced * state.materialCostPerUnit;
-        const wasteCost = (totalPartsProduced - netPartsProduced) * state.materialCostPerUnit;
+    // Overtime costs
+    const currentOvertimeCost = calcInputs.noOfOperatorsCurrent * calcInputs.annualOvertimeHoursperOperator * calcInputs.overtimeRatePerHour;
+    const postOvertimeCost = calcInputs.noOfOperatorsPost * calcInputs.annualOvertimeHoursperOperator * calcInputs.overtimeRatePerHour;
 
-        return {
-            totalPartsProduced,
-            netPartsProduced,
-            materialCost: Math.round(materialCost),
-            wasteCost: Math.round(wasteCost),
-            isOutsourced: false
-        };
-    };
+    // Technician costs
+    const currentTechnicianCost = calcInputs.techniciansCurrent * calcInputs.annualCostPerTechnician;
+    const postTechnicianCost = calcInputs.techniciansPost * calcInputs.annualCostPerTechnician;
 
-    // Calculate current state costs
-    const currentStateCosts = calculateMaterialCosts({
-      annualPartsGoal: calcInputs.annualPartsGoalCurrent,
-      machineUptime: calcInputs.machineUptimeCurrent,
-      scrapPercentage: calcInputs.scrapPercentageCurrent,
-      materialCostPerUnit: calcInputs.materialCostPerUnitCurrent,
-      outsourcedPartCost: calcInputs.outsourcedPartCostCurrent
-    });
+    // Total labor costs
+    const currentTotalLaborCost = currentRegularLaborCost + currentOvertimeCost + currentTechnicianCost;
+    const postTotalLaborCost = postRegularLaborCost + postOvertimeCost + postTechnicianCost;
 
-    // Calculate post-install costs
-    const postInstallCosts = calculateMaterialCosts({
-      annualPartsGoal: calcInputs.annualPartsGoalPost,
-      machineUptime: calcInputs.machineUptimePost,
-      scrapPercentage: calcInputs.scrapPercentagePost,
-      materialCostPerUnit: calcInputs.materialCostPerUnitPost,
-      outsourcedPartCost: calcInputs.outsourcedPartCostPost
-    });
+    // Material Calculations
+    const currentMaterialWasteCost = calcInputs.annualPartsGoal * (calcInputs.scrapPercentageCurrent/100) * calcInputs.materialCostPerUnit;
+    const postMaterialWasteCost = calcInputs.annualPartsGoal * (calcInputs.scrapPercentagePost/100) * calcInputs.materialCostPerUnit;
+    const materialWasteSavings = currentMaterialWasteCost - postMaterialWasteCost;
 
-    // Assign values from calculations
-    const totalPartsProducedGrossCurrent = currentStateCosts.totalPartsProduced;
-    const totalPartsProducedNetCurrent = currentStateCosts.netPartsProduced;
-    const annualMaterialCostCurrent = currentStateCosts.materialCost;
-    const materialWasteCostCurrent = currentStateCosts.wasteCost;
+    // Effective production (accounting for uptime)
+    const currentEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimeCurrent/100);
+    const postEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimePost/100);
 
-    const totalPartsProducedGrossPost = postInstallCosts.totalPartsProduced;
-    const totalPartsProducedNetPost = postInstallCosts.netPartsProduced;
-    const annualMaterialCostPost = postInstallCosts.materialCost;
-    const materialWasteCostPost = postInstallCosts.wasteCost;
-
+    // Material costs for actual production
+    const currentMaterialCost = currentEffectiveProduction * calcInputs.materialCostPerUnit;
+    const postMaterialCost = postEffectiveProduction * calcInputs.materialCostPerUnit;
 
     // Savings Calculations
-    const laborSavings = Math.round(totalLaborCostCurrent - totalLaborCostPost);
-    const materialSavings = annualMaterialCostCurrent - annualMaterialCostPost;
-    const wasteSavings = materialWasteCostCurrent - materialWasteCostPost;
-    const totalMaterialSavings = materialSavings + wasteSavings;
+    const currentTotalCosts = currentTotalLaborCost +  currentMaterialCost + currentMaterialWasteCost;
+    const postTotalCosts = postTotalLaborCost + postMaterialCost + postMaterialWasteCost;
 
-    const totalAnnualSavings = Math.round(laborSavings + totalMaterialSavings);
-    // const revenueSavings = annualRevenuePost - annualRevenueCurrent;
+    const annualSavings = currentTotalCosts - postTotalCosts;
+
+    const laborSavings = Math.round(currentTotalLaborCost - postTotalLaborCost);
+    const materialSavings = currentMaterialCost - postMaterialCost;
+
+    const year1ROI = annualSavings;
+    const year2ROI = annualSavings;
+    const year3ROI = annualSavings;
+
+    const totalROIOver3Years = year1ROI + year2ROI + year3ROI;
+    const netCashFlow3Year = totalROIOver3Years - calcInputs.newEquipmentCost;
     
-    // const year0CashFlow = -calcInputs.newEquipmentCost;
-    // const annualCashFlow = totalAnnualSavings;
-
-    // const cashFlows = [year0CashFlow, annualCashFlow, annualCashFlow, annualCashFlow];
-
-    const year0CashFlow = -calcInputs.newEquipmentCost;
-    const annualCashFlow = totalAnnualSavings;
-
-    const year1CashFlow = Math.round(annualCashFlow);
-    const year2CashFlow = Math.round(annualCashFlow);
-    const year3CashFlow = Math.round(annualCashFlow);
-    const netCashFlow = year1CashFlow + year2CashFlow + year3CashFlow;
-
-    const cashFlows = [year0CashFlow, year1CashFlow, year2CashFlow, year3CashFlow];
-
-    const discountRate = 0.10;
-    const npv = Math.round(
-            ((annualCashFlow / Math.pow(1 + discountRate, 1)) +
-            (annualCashFlow / Math.pow(1 + discountRate, 2)) +
-            (annualCashFlow / Math.pow(1 + discountRate, 3)))-calcInputs.newEquipmentCost);
+    const roiPercentage3Year = (netCashFlow3Year / calcInputs.newEquipmentCost) * 100;
+    const annualIRR = annualSavings > 0 ? (annualSavings / calcInputs.newEquipmentCost) * 100 : null;
     
-    // Calculate IRR and handle edge cases
-    let irr;
-    if (totalAnnualSavings > 0 && calcInputs.newEquipmentCost > 0) {
-      const irrValue = calculateIRR(cashFlows);
-      irr = !isNaN(irrValue) ? irrValue * 100 : null;
-    } else {
-      irr = null;
-    }
-    
-    // Calculate Payback Period (in months)
-    let paybackPeriod;
-    if (calcInputs.newEquipmentCost <= 0) {
-        paybackPeriod = 0;  // No investment needed
-    } else if (totalAnnualSavings <= 0) {
-        paybackPeriod = Infinity;  // No savings, will never pay back
-    } else {
-        paybackPeriod = (calcInputs.newEquipmentCost / totalAnnualSavings) * 12;
-    }
+    const paybackPeriod = annualSavings > 0 ? calcInputs.newEquipmentCost / annualSavings : null;
+
 
     const newResults = {
       // Current State
-      totalOperatorsCurrent: calcInputs.noOfOperatorsCurrent,
-      baseLaborCostCurrent,
-      overtimeCostCurrent,
-      totalOperatorsCostCurrent,
-      totalTechniciansCostCurrent,
-      totalLaborCostCurrent,
-      totalPartsProducedGrossCurrent,
-      totalPartsProducedNetCurrent,
-      annualMaterialCostCurrent,
-      materialWasteCostCurrent,
-      // annualRevenueCurrent,
-      // contributionMarginCurrent,
-      // contributionMarginRatioCurrent,
-      
-      // Post Install
-      totalOperatorsPost: calcInputs.noOfOperatorsPost,
-      baseLaborCostPost,
-      overtimeCostPost,
-      totalOperatorsCostPost,
-      totalTechniciansCostPost,
-      totalLaborCostPost,
-      totalPartsProducedGrossPost,
-      totalPartsProducedNetPost,
-      annualMaterialCostPost,
-      materialWasteCostPost,
-      // annualRevenuePost,
-      // contributionMarginPost,
-      // contributionMarginRatioPost,
-      
-      // Improvements
-      // contributionMarginImprovement,
+      currentTotalLaborCost,
+      postTotalLaborCost,
+      currentMaterialCost,
+      postMaterialCost,
+      currentMaterialWasteCost,
+      postMaterialWasteCost,
+
+      // Savings breakdown
       laborSavings,
       materialSavings,
-      totalAnnualSavings,
-      // materialWasteSavings,
+      materialWasteSavings,
+      annualSavings,
       
-      // ROI Metrics
-      // ROI Metrics
-      annualCashFlow,
-      year1CashFlow,
-      year2CashFlow,
-      year3CashFlow,
-      netCashFlow,
-      npv,
-      irr,
-      paybackPeriod: paybackPeriod === Infinity ? 'N/A' : Number(paybackPeriod)
-      // annualCashFlow,
-      // npv,
-      // irr: irr * 100,
-      // paybackPeriod
+      // ROI metrics
+      paybackPeriod,
+      totalROIOver3Years,
+      netCashFlow3Year,
+      roiPercentage3Year,
+      annualIRR,
+
+      // 3-year breakdown
+      yearlyROI: [annualSavings, annualSavings, annualSavings],
+
+      // Investment
+      investment: calcInputs.newEquipmentCost
     };
 
     console.log('Calculated Results (Cost Savings Based):', newResults);
@@ -266,6 +185,9 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
     // Debugging: Log results after setting state
     console.log('Results calculated and set:', newResults);
 
+    const newWarnings = validateCalculations(newResults);
+    setWarnings(newWarnings);
+
   }, [calcInputs]);
 
   const handleInputChange = (field, value) => {
@@ -273,6 +195,13 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
   };
 
   const handleCalculate = () => {
+    const validationErrors = validateInputs(inputs);
+    setErrors(validationErrors);
+
+    if (validationErrors.length > 0) {
+      setShowResults(false); // ensure stale results don't show
+      return; // stop calculation
+    }
     setCalcInputs(inputs);
     setShowResults(true);
   };
@@ -311,8 +240,8 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                   <h3 className="text-lg font-semibold text-darkBlue mb-4">Current State</h3>
                   <SliderInput
                     label="Annual Parts Goal"
-                    value={inputs.annualPartsGoalCurrent}
-                    onChange={(value) => handleInputChange('annualPartsGoalCurrent', value)}
+                    value={inputs.annualPartsGoal}
+                    onChange={(value) => handleInputChange('annualPartsGoal', value)}
                     min={0}
                     max={5000000}
                   />
@@ -335,34 +264,16 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                   />
                   <SliderInput
                     label="Material Cost per Unit"
-                    value={inputs.materialCostPerUnitCurrent}
-                    onChange={(value) => handleInputChange('materialCostPerUnitCurrent', value)}
+                    value={inputs.materialCostPerUnit}
+                    onChange={(value) => handleInputChange('materialCostPerUnit', value)}
                     min={0}
                     max={100}
                     suffix="$"
                   />
-                  {inputs.materialCostPerUnitCurrent === 0 && (
-                    <SliderInput
-                      label="Outsourced Part Cost"
-                      value={inputs.outsourcedPartCostCurrent}
-                      onChange={(value) => handleInputChange('outsourcedPartCostCurrent', value)}
-                      min={0}
-                      max={100}
-                      suffix="$"
-                      disabled={inputs.materialCostPerUnitCurrent !== 0}
-                    />
-                  )}
                 </div>
                 
                 <div>
                   <h3 className="text-lg font-semibold text-darkBlue mb-4">Post Install</h3>
-                  <SliderInput
-                    label="Annual Parts Goal"
-                    value={inputs.annualPartsGoalPost}
-                    onChange={(value) => handleInputChange('annualPartsGoalPost', value)}
-                    min={0}
-                    max={5000000}
-                  />
                   <SliderInput
                     label="Machine Uptime"
                     value={inputs.machineUptimePost}
@@ -380,25 +291,6 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                     suffix="%"
                     step={0.1}
                   />
-                  <SliderInput
-                    label="Material Cost per Unit"
-                    value={inputs.materialCostPerUnitPost}
-                    onChange={(value) => handleInputChange('materialCostPerUnitPost', value)}
-                    min={0}
-                    max={100}
-                    suffix="$"
-                  />
-                  {inputs.materialCostPerUnitPost === 0 && (
-                    <SliderInput
-                      label="Outsourced Part Cost"
-                      value={inputs.outsourcedPartCostPost}
-                      onChange={(value) => handleInputChange('outsourcedPartCostPost', value)}
-                      min={0}
-                      max={100}
-                      suffix="$"
-                      disabled={inputs.materialCostPerUnitPost !== 0}
-                    />
-                  )}
                 </div>
               </div>
 
@@ -416,8 +308,8 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                   <h3 className="text-lg font-semibold text-darkBlue mb-4">Current State</h3>
                   <SliderInput
                     label="Work Shifts"
-                    value={inputs.workShiftsCurrent}
-                    onChange={(value) => handleInputChange('workShiftsCurrent', value)}
+                    value={inputs.workShifts}
+                    onChange={(value) => handleInputChange('workShifts', value)}
                     min={0}
                     max={4}
                     step={0.01}
@@ -425,8 +317,8 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                   />
                   <SliderInput
                     label="Days per Year"
-                    value={inputs.daysPerYearCurrent}
-                    onChange={(value) => handleInputChange('daysPerYearCurrent', value)}
+                    value={inputs.daysPerYear}
+                    onChange={(value) => handleInputChange('daysPerYear', value)}
                     min={0}
                     max={320}
                     step={0.01}
@@ -434,8 +326,8 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                   />
                   <SliderInput
                     label="Hours per Shift"
-                    value={inputs.hoursPerShiftCurrent}
-                    onChange={(value) => handleInputChange('hoursPerShiftCurrent', value)}
+                    value={inputs.hoursPerShift}
+                    onChange={(value) => handleInputChange('hoursPerShift', value)}
                     min={0}
                     max={12}
                     step={0.01}
@@ -458,6 +350,15 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                     decimals={2}
                   /> */}
                   <SliderInput
+                    label="Hourly Wage Per Operator"
+                    value={inputs.hourlyWageOperator}
+                    onChange={(value) => handleInputChange('hourlyWageOperator', value)}
+                    min={0}
+                    max={60}
+                    step={0.01}
+                    decimals={2}
+                  />
+                  {/* <SliderInput
                     label="Operator Annual Cost (pre-overtime)"
                     value={inputs.operatorAnnualCostPreOvertimeCurrent}
                     onChange={(value) => handleInputChange('operatorAnnualCostPreOvertimeCurrent', value)}
@@ -466,11 +367,11 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                     step={0.01}
                     decimals={2}
                     suffix="$"
-                  />
+                  /> */}
                   <SliderInput
                     label="Overtime Rate per Hour"
-                    value={inputs.overtimeRatePerHourCurrent}
-                    onChange={(value) => handleInputChange('overtimeRatePerHourCurrent', value)}
+                    value={inputs.overtimeRatePerHour}
+                    onChange={(value) => handleInputChange('overtimeRatePerHour', value)}
                     min={0}
                     max={200}
                     step={0.01}
@@ -478,8 +379,8 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                   />
                   <SliderInput
                     label="Annual Overtime Hours per Operator"
-                    value={inputs.annualOvertimeHoursperOperatorCurrent}
-                    onChange={(value) => handleInputChange('annualOvertimeHoursperOperatorCurrent', value)}
+                    value={inputs.annualOvertimeHoursperOperator}
+                    onChange={(value) => handleInputChange('annualOvertimeHoursperOperator', value)}
                     min={0}
                     max={1000}
                     step={0.01}
@@ -494,8 +395,8 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                   />
                   <SliderInput
                     label="Annual Cost per Technician"
-                    value={inputs.annualCostPerTechnicianCurrent}
-                    onChange={(value) => handleInputChange('annualCostPerTechnicianCurrent', value)}
+                    value={inputs.annualCostPerTechnician}
+                    onChange={(value) => handleInputChange('annualCostPerTechnician', value)}
                     min={0}
                     max={200000}
                     suffix="$"
@@ -503,34 +404,7 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-semibold text-darkBlue mb-4">Post Install</h3>
-                  <SliderInput
-                    label="Work Shifts"
-                    value={inputs.workShiftsPost}
-                    onChange={(value) => handleInputChange('workShiftsPost', value)}
-                    min={0}
-                    max={4}
-                    step={0.01}
-                    decimals={2}
-                  />
-                  <SliderInput
-                    label="Days per Year"
-                    value={inputs.daysPerYearPost}
-                    onChange={(value) => handleInputChange('daysPerYearPost', value)}
-                    min={0}
-                    max={320}
-                    step={0.01}
-                    decimals={2}
-                  />
-                  <SliderInput
-                    label="Hours per Shift"
-                    value={inputs.hoursPerShiftPost}
-                    onChange={(value) => handleInputChange('hoursPerShiftPost', value)}
-                    min={0}
-                    max={12}
-                    step={0.01}
-                    decimals={2}
-                  />
+                  <h3 className="text-lg font-semibold text-darkBlue mb-4">Post Install</h3>                
                   <SliderInput
                     label="Number of Operators"
                     value={inputs.noOfOperatorsPost}
@@ -538,58 +412,13 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                     min={0}
                     max={20}
                   />
-                  {/* <SliderInput
-                    label="Operator Hours per Week"
-                    value={inputs.operatorHoursPost}
-                    onChange={(value) => handleInputChange('operatorHoursPost', value)}
-                    min={0}
-                    max={60}
-                    step={0.01}
-                    decimals={2}
-                  /> */}
-                  <SliderInput
-                    label="Operator Annual Cost (pre-overtime)"
-                    value={inputs.operatorAnnualCostPreOvertimePost}
-                    onChange={(value) => handleInputChange('operatorAnnualCostPreOvertimePost', value)}
-                    min={0}
-                    max={200000}
-                    step={0.01}
-                    decimals={2}
-                    suffix="$"
-                  />
-                  <SliderInput
-                    label="Overtime Rate per Hour"
-                    value={inputs.overtimeRatePerHourPost}
-                    onChange={(value) => handleInputChange('overtimeRatePerHourPost', value)}
-                    min={0}
-                    max={200}
-                    step={0.01}
-                    decimals={2}
-                  />
-                  <SliderInput
-                    label="Annual Overtime Hours per Operator"
-                    value={inputs.annualOvertimeHoursperOperatorPost}
-                    onChange={(value) => handleInputChange('annualOvertimeHoursperOperatorPost', value)}
-                    min={0}
-                    max={1000}
-                    step={0.01}
-                    decimals={2}
-                  />
+                  
                   <SliderInput
                     label="Technicians"
                     value={inputs.techniciansPost}
                     onChange={(value) => handleInputChange('techniciansPost', value)}
                     min={0}
                     max={5}
-                  />
-                  <SliderInput
-                    label="Annual Cost per Technician"
-                    value={inputs.annualCostPerTechnicianPost}
-                    onChange={(value) => handleInputChange('annualCostPerTechnicianPost', value)}
-                    min={0}
-                    max={200000}
-                    suffix="$"
-
                   />
                 </div>
               </div>
@@ -634,7 +463,14 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                 <TrendingUp className="w-6 h-6 text-lightGreen" />
                 <h2 className="text-xl font-bold text-darkBlue">Cost Savings Analysis</h2>
               </div>
-
+              {warnings?.length > 0 && showResults && (
+                <div className="mb-6 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+                  <p className="font-semibold mb-2">Heads up:</p>
+                  <ul className="list-disc ml-5 space-y-1">
+                    {warnings.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                </div>
+              )}
               {showResults ? (
                 <div>
                   <ResultsPanel results={results} />

@@ -2,6 +2,12 @@ import React from 'react';
 import { jsPDF } from 'jspdf';
 import logo from '../Images/64469a0e797d2d34b5888432_Machine-Solutions-p-500.jpg';
 
+const formatYears = (years) => {
+    if (years === null || years === Infinity) return "N/A";
+    if (years < 1) return `${(years * 12).toFixed(1)} months`;
+    return `${years.toFixed(1)} years`;
+}
+
 const InfoPopup = ({ 
   showPopup, 
   setShowPopup, 
@@ -128,52 +134,39 @@ const InfoPopup = ({
 
     // Labor Configuration Section
     const laborCurrentData = [
-      ['Work Shifts', inputs.workShiftsCurrent || 0],
-      ['Days per Year', inputs.daysPerYearCurrent || 0],
-      ['Hours per Shift', inputs.hoursPerShiftCurrent || 0],
+      ['Work Shifts', inputs.workShifts || 0],
+      ['Days per Year', inputs.daysPerYear || 0],
+      ['Hours per Shift', inputs.hoursPerShift || 0],
       ['Number of Operators', inputs.noOfOperatorsCurrent || 0],
-      ['Operator Annual Cost (pre-overtime)', inputs.operatorAnnualCostPreOvertimeCurrent],
-      ['Overtime Rate per Hour',inputs.overtimeRatePerHourCurrent],
-      ['Annual Overtime Hours per Operator',inputs.annualOvertimeHoursperOperatorCurrent],
+      // ['Operator Annual Cost (pre-overtime)', inputs.operatorAnnualCostPreOvertime],
+      ['Hourly Wage per Operator', inputs.hourlyWageOperator || 0],
+      ['Overtime Rate per Hour',inputs.overtimeRatePerHour],
+      ['Annual Overtime Hours per Operator',inputs.annualOvertimeHoursperOperator],
       // ['Operator Hours/Week', inputs.operatorHoursCurrent || 0],
       // ['Operator Wage ($/hr)', `$${(inputs.operatorWageCurrent || 0).toLocaleString()}`],
       ['Technicians', inputs.techniciansCurrent || 0],
       // ['Annual Cost per Operator', `$${(results.annualCostPerOperatorCurrent || 0).toLocaleString()}`],
-      ['Annual Cost per Technician', `$${(inputs.annualCostPerTechnicianCurrent || 0).toLocaleString()}`]
+      ['Annual Cost per Technician', `$${(inputs.annualCostPerTechnician || 0).toLocaleString()}`]
     ];
 
     const laborPostData = [
-      ['Work Shifts', inputs.workShiftsPost || 0],
-      ['Days per Year', inputs.daysPerYearPost || 0],
-      ['Hours per Shift', inputs.hoursPerShiftPost || 0],
       ['Number of Operators', inputs.noOfOperatorsPost || 0],
-      ['Operator Annual Cost (pre-overtime)', `$${(inputs.operatorAnnualCostPreOvertimePost||0).toLocaleString()}`],
-      ['Overtime Rate per Hour',inputs.overtimeRatePerHourPost],
-      ['Annual Overtime Hours per Operator',inputs.annualOvertimeHoursperOperatorPost],
-      // ['Operator Hours/Week', inputs.operatorHoursCurrent || 0],
-      // ['Operator Wage ($/hr)', `$${(inputs.operatorWageCurrent || 0).toLocaleString()}`],
       ['Technicians', inputs.techniciansPost || 0],
-      // ['Annual Cost per Operator', `$${(results.annualCostPerOperatorCurrent || 0).toLocaleString()}`],
-      ['Annual Cost per Technician', `$${(inputs.annualCostPerTechnicianPost || 0).toLocaleString()}`]
     ];
 
     yPosition = drawSection('Labor Configuration', laborCurrentData, laborPostData, yPosition);
 
     // Materials & Production Section
     const materialsCurrentData = [
-      ['Annual Parts Goal', (inputs.annualPartsGoalCurrent || 0).toLocaleString()],
+      ['Annual Parts Goal', (inputs.annualPartsGoal || 0).toLocaleString()],
       ['Machine Uptime', `${inputs.machineUptimeCurrent || 0}%`],
       ['Scrap Percentage', `${inputs.scrapPercentageCurrent || 0}%`],
-      ['Material Cost per Unit', `$${(inputs.materialCostPerUnitCurrent || 0).toLocaleString()}`],
-      // ['Sell Price per Part', `$${(inputs.sellPricePerPartCurrent || 0).toLocaleString()}`]
+      ['Material Cost per Unit', `$${(inputs.materialCostPerUnit || 0).toLocaleString()}`],
     ];
 
     const materialsPostData = [
-      ['Annual Parts Goal', (inputs.annualPartsGoalPost || 0).toLocaleString()],
       ['Machine Uptime', `${inputs.machineUptimePost || 0}%`],
       ['Scrap Percentage', `${inputs.scrapPercentagePost || 0}%`],
-      ['Material Cost per Unit', `$${(inputs.materialCostPerUnitPost || 0).toLocaleString()}`],
-      // ['Sell Price per Part', `$${(inputs.sellPricePerPartPost || 0).toLocaleString()}`]
     ];
 
     yPosition = drawSection('Materials & Production', materialsCurrentData, materialsPostData, yPosition);
@@ -224,22 +217,22 @@ const InfoPopup = ({
     // Current vs Post Install table data
     const comparisonData = [
       ['Total Labor Cost', 
-       `$${(results.totalLaborCostCurrent || 0).toLocaleString()}`, 
-       `$${(results.totalLaborCostPost || 0).toLocaleString()}`],
+       `$${(results.currentTotalLaborCost || 0).toLocaleString()}`, 
+       `$${(results.postTotalLaborCost || 0).toLocaleString()}`],
       ['Material Cost', 
-       `$${(results.annualMaterialCostCurrent || 0).toLocaleString()}`, 
-       `$${(results.annualMaterialCostPost || 0).toLocaleString()}`],
+       `$${(results.currentMaterialCost || 0).toLocaleString()}`, 
+       `$${(results.postMaterialCost || 0).toLocaleString()}`],
       ['Material Waste Cost', 
-       `$${(results.materialWasteCostCurrent || 0).toLocaleString()}`, 
-       `$${(results.materialWasteCostPost || 0).toLocaleString()}`],
+       `$${(results.currentMaterialWasteCost || 0).toLocaleString()}`, 
+       `$${(results.postMaterialWasteCost || 0).toLocaleString()}`],
     ];
 
     // ROI table data
     const roiData = [
-      ['Year 1', `$${(results.year1CashFlow || 0).toLocaleString()}`],
-      ['Year 2', `$${(results.year2CashFlow || 0).toLocaleString()}`],
-      ['Year 3', `$${(results.year3CashFlow || 0).toLocaleString()}`],
-      ['Net Cash Flow', `$${(results.netCashFlow || 0).toLocaleString()}`]
+      ['Year 1', `$${(results.yearlyROI[0] || 0).toLocaleString()}`],
+      ['Year 2', `$${(results.yearlyROI[1] || 0).toLocaleString()}`],
+      ['Year 3', `$${(results.yearlyROI[2] || 0).toLocaleString()}`],
+      ['Total ROI', `$${(results.totalROIOver3Years || 0).toLocaleString()}`]
     ];
 
     let leftTableY = yPosition;
@@ -307,10 +300,10 @@ const InfoPopup = ({
       doc.setTextColor(0, 0, 0);
 
     const keyMetrics = [
-      ['Annual Cost Savings', `$${(results.totalAnnualSavings || 0).toLocaleString()}`],
-      // ['Payback Period', typeof results.paybackPeriod === 'number' ? `${results.paybackPeriod.toFixed(1)} months` : 'N/A'],
-      ['Internal Rate of Return', `${(results.irr || 0).toFixed(1)}%`],
-      ['Net Present Value', `$${(results.npv || 0).toLocaleString()}`]
+      ['Annual Cost Savings', `$${(results.annualSavings || 0).toLocaleString()}`],
+      ['Payback Period', typeof results.paybackPeriod === 'number' ? `${formatYears(results.paybackPeriod)} ` : 'N/A'],
+      ['Internal Rate of Return', `${(results.annualIRR || 0).toFixed(1)}%`],
+      ['ROI Percentage', `$${(results.roiPercentage3Year || 0).toLocaleString()}`]
     ];
 
     keyMetrics.forEach(([label, value]) => {
