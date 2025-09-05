@@ -83,6 +83,7 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
     scrapPercentageCurrent: 5,
     scrapPercentagePost: 1,
     materialCostPerUnit: 12,
+    materialCostPerUnitPost: 12,
     
     
     // Capital Equipment
@@ -117,31 +118,41 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
 
     // Material Calculations - Fixed Logic
     const currentMaterialWasteCost = calcInputs.annualPartsGoal * (calcInputs.scrapPercentageCurrent/100) * calcInputs.materialCostPerUnit;
-    const postMaterialWasteCost = calcInputs.annualPartsGoal * (calcInputs.scrapPercentagePost/100) * calcInputs.materialCostPerUnit;
+    const postMaterialWasteCost = calcInputs.annualPartsGoal * (calcInputs.scrapPercentagePost/100) * (calcInputs.materialCostPerUnitPost ?? calcInputs.materialCostPerUnit);
     const materialWasteSavings = currentMaterialWasteCost - postMaterialWasteCost;
 
     // Material costs for actual production - FIXED LOGIC
     // For outsourced production (0% uptime), we still pay for the full annual parts goal
     // For in-house production, we pay for what we can actually produce based on uptime
-    let currentMaterialCost, postMaterialCost;
+    // let currentMaterialCost, postMaterialCost;
     
-    if (calcInputs.machineUptimeCurrent === 0) {
-      // Outsourced: Pay for all parts regardless of internal production capacity
-      currentMaterialCost = calcInputs.annualPartsGoal * calcInputs.materialCostPerUnit;
-    } else {
-      // In-house: Pay based on what we can actually produce
-      const currentEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimeCurrent/100);
-      currentMaterialCost = currentEffectiveProduction * calcInputs.materialCostPerUnit;
-    }
+    // if (calcInputs.machineUptimeCurrent === 0) {
+    //   // Outsourced: Pay for all parts regardless of internal production capacity
+    //   currentMaterialCost = calcInputs.annualPartsGoal * calcInputs.materialCostPerUnit;
+    // } else {
+    //   // In-house: Pay based on what we can actually produce
+    //   const currentEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimeCurrent/100);
+    //   currentMaterialCost = currentEffectiveProduction * calcInputs.materialCostPerUnit;
+    // }
     
-    if (calcInputs.machineUptimePost === 0) {
-      // Outsourced: Pay for all parts regardless of internal production capacity
-      postMaterialCost = calcInputs.annualPartsGoal * calcInputs.materialCostPerUnit;
-    } else {
-      // In-house: Pay based on what we can actually produce
-      const postEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimePost/100);
-      postMaterialCost = postEffectiveProduction * calcInputs.materialCostPerUnit;
-    }
+    // if (calcInputs.machineUptimePost === 0) {
+    //   // Outsourced: Pay for all parts regardless of internal production capacity
+    //   postMaterialCost = calcInputs.annualPartsGoal * calcInputs.materialCostPerUnit;
+    // } else {
+    //   // In-house: Pay based on what we can actually produce
+    //   const postEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimePost/100);
+    //   postMaterialCost = postEffectiveProduction * calcInputs.materialCostPerUnit;
+    // }
+
+    //Fixed Calculations Ai provided (Returning positive values)
+    const currentMaterialCost = calcInputs.annualPartsGoal * calcInputs.materialCostPerUnit;
+    const postMaterialCost = calcInputs.annualPartsGoal * (calcInputs.materialCostPerUnitPost ?? calcInputs.materialCostPerUnit);
+
+    //Provided Calculations (Returning negative values)
+    // const currentEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimeCurrent/100);
+    // const postEffectiveProduction = calcInputs.annualPartsGoal * (calcInputs.machineUptimePost/100);
+    // const currentMaterialCost = currentEffectiveProduction * calcInputs.materialCostPerUnit;
+    // const postMaterialCost = postEffectiveProduction * calcInputs.materialCostPerUnit;
 
     // Savings Calculations
     const currentTotalCosts = currentTotalLaborCost +  currentMaterialCost + currentMaterialWasteCost;
@@ -305,6 +316,14 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
                     max={100}
                     suffix="%"
                     step={0.1}
+                  />
+                  <SliderInput
+                    label="Material Cost per Unit (Post)"
+                    value={inputs.materialCostPerUnitPost}
+                    onChange={(value) => handleInputChange('materialCostPerUnitPost', value)}
+                    min={0}
+                    max={100}
+                    suffix="$"
                   />
                 </div>
               </div>
