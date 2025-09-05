@@ -167,6 +167,7 @@ const InfoPopup = ({
     const materialsPostData = [
       ['Machine Uptime', `${inputs.machineUptimePost || 0}%`],
       ['Scrap Percentage', `${inputs.scrapPercentagePost || 0}%`],
+      ['Material Cost per Unit', `$${(inputs.materialCostPerUnitPost || 0).toLocaleString()}`]
     ];
 
     yPosition = drawSection('Materials & Production', materialsCurrentData, materialsPostData, yPosition);

@@ -83,7 +83,7 @@ const ROICalculator = ({showPopup, setShowPopup, enabled, setEnabled, formData, 
     scrapPercentageCurrent: 5,
     scrapPercentagePost: 1,
     materialCostPerUnit: 12,
-    materialCostPerUnitPost: 12,
+    materialCostPerUnitPost: 8,
     
     
     // Capital Equipment
