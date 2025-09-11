@@ -795,7 +795,8 @@ const ROICalculator = ({
                   min={0}
                   max={50}
                   suffix="%"
-                  step={0.1}
+                  step={0.01}
+                  decimals={2}
                 />
               </div>
 
