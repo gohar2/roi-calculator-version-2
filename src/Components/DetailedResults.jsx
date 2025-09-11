@@ -62,7 +62,7 @@ const DetailedResults = ({ results }) => {
             </span>
           </div> */}
 
-          <div className="grid grid-cols-3 gap-4 text-sm border-t pt-2">
+          <div className="grid grid-cols-3 gap-4 text-sm">
             <span className="text-darkBlue font-medium">
               Annual Material Spend
             </span>
@@ -114,11 +114,11 @@ const DetailedResults = ({ results }) => {
 
       {/* 3-Year Cash Flow Projection */}
       <div className="bg-white rounded-2xl shadow-xl p-8">
-        <h2 className="text-2xl font-bold text-darkBlue mb-6">3-Year ROI</h2>
+        <h2 className="text-2xl font-bold text-darkBlue mb-6">3-Year Cashflow</h2>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm font-medium text-darkBlue border-b pb-2">
             <span>Year</span>
-            <span className="text-right">ROI</span>
+            <span className="text-right">Cashflow</span>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -144,7 +144,7 @@ const DetailedResults = ({ results }) => {
 
           <div className="grid grid-cols-2 gap-4 text-sm border-t pt-2">
             <span className="text-darkBlue font-medium">
-              Total ROI (Years 1–3)
+              Total Cashflow (Years 1–3)
             </span>
             <span className="text-right font-bold text-lightGreen">
               {formatCurrency(results.totalROIOver3Years)}

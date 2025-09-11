@@ -71,11 +71,9 @@ const ResultsPanel = ({ results }) => {
 
       <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4 text-center">
         <DollarSign className="w-8 h-8 text-darkBlue mx-auto mb-2" />
-        <p className="text-sm text-darkBlue font-medium">ROI Percentage</p>
+        <p className="text-sm text-darkBlue font-medium">Net Present Value (NPV)</p>
         <p className="text-2xl font-bold text-darkBlue">
-          {typeof results.roiPercentage3Year === "number"
-            ? `${formatPercentage(results.roiPercentage3Year)}`
-            : "N/A"}
+          {typeof results.npv === "number" ? `${formatCurrency(results.npv)}` : "N/A"}
         </p>
         <p className="text-xs text-gray-500 mt-1">Calculated over 3 years</p>
       </div>
