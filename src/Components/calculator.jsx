@@ -105,10 +105,12 @@ const ROICalculator = ({
     unitValuePerGoodUnit: 0,
     unitValuePerGoodUnit: 0,
     unitValuePerGoodUnitPost: 0,
+    // Margin for contribution per additional unit (as percent of material unit cost)
+    marginPercentOfMaterialUnitCost: 75,
 
     // Capital Equipment
-    newEquipmentCost: 50000,
-    discountRate: 0.1,
+    newEquipmentCost: 500000,
+    discountRate: 10,
     existingEquipmentWriteOff: 0,
   });
 
@@ -231,10 +233,10 @@ const ROICalculator = ({
       if (value == null || isNaN(value)) return 0;
       return value > 1 ? value / 100 : value;
     };
-    const scrapCurrent = normalizePercent(calcInputs.scrapPercentageCurrent);
-    const scrapPost = normalizePercent(calcInputs.scrapPercentagePost);
-    const uptimeCurrent = normalizePercent(calcInputs.machineUptimeCurrent);
-    const uptimePost = normalizePercent(calcInputs.machineUptimePost);
+    const scrapCurrent = calcInputs.scrapPercentageCurrent;
+    const scrapPost = calcInputs.scrapPercentagePost;
+    const uptimeCurrent = calcInputs.machineUptimeCurrent;
+    const uptimePost = calcInputs.machineUptimePost;
 
     // Regular labor costs (separate current/post)
     const totalWorkingHoursCurrent =
@@ -297,6 +299,8 @@ const ROICalculator = ({
     const deltaGoodUnits = goodUnitsPost - goodUnitsCurrent;
     // Unit-value benefit removed from calculation per request
     const deltaUnitValueBenefit = 0;
+    
+    console.log("goodUnitsCurrent:",goodUnitsCurrent)
 
     // Savings Calculations (cost deltas plus unit-value benefit). Waste is already embedded in material costs above.
     const currentTotalCosts = currentTotalLaborCost + currentMaterialCost;
@@ -309,9 +313,21 @@ const ROICalculator = ({
     const laborSavings = Math.round(currentTotalLaborCost - postTotalLaborCost);
     const materialSavings = currentMaterialCost - postMaterialCost;
 
-    const year1ROI = annualSavings;
-    const year2ROI = annualSavings;
-    const year3ROI = annualSavings;
+    // Contribution per Additional Unit (auto): margin % of material unit cost × variable cost per unit
+    const marginPct = normalizePercent(
+      calcInputs.marginPercentOfMaterialUnitCost
+    );
+    const variableCostPerUnit = goodUnitsPost <= 0 ? 0 : postMaterialCost / goodUnitsPost;
+    const contributionPerAdditionalUnit =
+      marginPct > 0 && variableCostPerUnit > 0
+        ? marginPct * variableCostPerUnit
+        : 0;
+    const additionalContributionFromUnits = deltaGoodUnits * contributionPerAdditionalUnit;
+
+
+    const year1ROI = annualSavings + (deltaGoodUnits * contributionPerAdditionalUnit);
+    const year2ROI = annualSavings + (deltaGoodUnits * contributionPerAdditionalUnit);
+    const year3ROI = annualSavings + (deltaGoodUnits * contributionPerAdditionalUnit);
 
     // Discounted ROI (optional, based on discountRate input)
     const r = (calcInputs.discountRate || 0) / 100;
@@ -379,6 +395,8 @@ const ROICalculator = ({
       materialWasteSavings: 0,
       deltaGoodUnits,
       unitValueBenefit: deltaUnitValueBenefit,
+      contributionPerAdditionalUnit,
+      additionalContributionFromUnits,
       annualSavings,
 
       // ROI metrics
@@ -404,7 +422,7 @@ const ROICalculator = ({
       npv,
 
       // 3-year breakdown
-      yearlyROI: [annualSavings, annualSavings, annualSavings],
+      // yearlyROI: [annualSavings, annualSavings, annualSavings],
 
       // Investment
       investment: calcInputs.newEquipmentCost,
@@ -552,6 +570,21 @@ const ROICalculator = ({
                     max={100}
                     suffix="$"
                   />
+                  <SliderInput
+                    label="Margin % of Material Unit Cost"
+                    value={inputs.marginPercentOfMaterialUnitCost}
+                    onChange={(value) =>
+                      handleInputChange(
+                        "marginPercentOfMaterialUnitCost",
+                        value
+                      )
+                    }
+                    min={0}
+                    max={100}
+                    suffix="%"
+                    step={0.01}
+                    decimals={2}
+                  />
                 </div>
               </div>
             </div>
@@ -669,7 +702,7 @@ const ROICalculator = ({
                     Post Install
                   </h3>
                   <SliderInput
-                    label="Work Shifts (Post)"
+                    label="Work Shifts"
                     value={inputs.workShiftsPost}
                     onChange={(value) =>
                       handleInputChange("workShiftsPost", value)
@@ -680,7 +713,7 @@ const ROICalculator = ({
                     decimals={2}
                   />
                   <SliderInput
-                    label="Days per Year (Post)"
+                    label="Days per Year"
                     value={inputs.daysPerYearPost}
                     onChange={(value) =>
                       handleInputChange("daysPerYearPost", value)
@@ -691,7 +724,7 @@ const ROICalculator = ({
                     decimals={2}
                   />
                   <SliderInput
-                    label="Hours per Shift (Post)"
+                    label="Hours per Shift"
                     value={inputs.hoursPerShiftPost}
                     onChange={(value) =>
                       handleInputChange("hoursPerShiftPost", value)
@@ -721,7 +754,31 @@ const ROICalculator = ({
                     step={0.01}
                     decimals={2}
                   />
-
+                  <SliderInput
+                    label="Overtime Rate per Hour"
+                    value={inputs.overtimeRatePerHourPost}
+                    onChange={(value) =>
+                      handleInputChange("overtimeRatePerHourPost", value)
+                    }
+                    min={0}
+                    max={200}
+                    step={0.01}
+                    decimals={2}
+                  />
+                  <SliderInput
+                    label="Annual Overtime Hours per Operator"
+                    value={inputs.annualOvertimeHoursperOperatorPost}
+                    onChange={(value) =>
+                      handleInputChange(
+                        "annualOvertimeHoursperOperatorPost",
+                        value
+                      )
+                    }
+                    min={0}
+                    max={1000}
+                    step={0.01}
+                    decimals={2}
+                  />
                   <SliderInput
                     label="Technicians"
                     value={inputs.techniciansPost}
@@ -740,31 +797,6 @@ const ROICalculator = ({
                     min={0}
                     max={200000}
                     suffix="$"
-                  />
-                  <SliderInput
-                    label="Overtime Rate per Hour (Post)"
-                    value={inputs.overtimeRatePerHourPost}
-                    onChange={(value) =>
-                      handleInputChange("overtimeRatePerHourPost", value)
-                    }
-                    min={0}
-                    max={200}
-                    step={0.01}
-                    decimals={2}
-                  />
-                  <SliderInput
-                    label="Annual Overtime Hours per Operator (Post)"
-                    value={inputs.annualOvertimeHoursperOperatorPost}
-                    onChange={(value) =>
-                      handleInputChange(
-                        "annualOvertimeHoursperOperatorPost",
-                        value
-                      )
-                    }
-                    min={0}
-                    max={1000}
-                    step={0.01}
-                    decimals={2}
                   />
                 </div>
               </div>

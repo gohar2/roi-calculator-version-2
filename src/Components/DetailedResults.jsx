@@ -124,21 +124,21 @@ const DetailedResults = ({ results }) => {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <span className="text-darkBlue">Year 1</span>
             <span className="text-right font-bold text-lightGreen">
-              {formatCurrency(results.yearlyROI[0])}
+              {formatCurrency(results.cashFlows[1].nominal)}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <span className="text-darkBlue">Year 2</span>
             <span className="text-right font-bold text-lightGreen">
-              {formatCurrency(results.yearlyROI[1])}
+              {formatCurrency(results.cashFlows[2].nominal)}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <span className="text-darkBlue">Year 3</span>
             <span className="text-right font-bold text-lightGreen">
-              {formatCurrency(results.yearlyROI[2])}
+              {formatCurrency(results.cashFlows[3].nominal)}
             </span>
           </div>
 

@@ -7,6 +7,21 @@ const formatYears = (years) => {
     if (years < 1) return `${(years * 12).toFixed(1)} months`;
     return `${years.toFixed(1)} years`;
 }
+const formatPercentage = (value) => {
+  return new Intl.NumberFormat("en-US", {
+    style: "percent",
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 2,
+  }).format(value / 100);
+};
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
 
 const InfoPopup = ({ 
   showPopup, 
@@ -146,12 +161,19 @@ const InfoPopup = ({
       // ['Operator Wage ($/hr)', `$${(inputs.operatorWageCurrent || 0).toLocaleString()}`],
       ['Technicians', inputs.techniciansCurrent || 0],
       // ['Annual Cost per Operator', `$${(results.annualCostPerOperatorCurrent || 0).toLocaleString()}`],
-      ['Annual Cost per Technician', `$${(inputs.annualCostPerTechnician || 0).toLocaleString()}`]
+      ['Annual Cost per Technician', `${formatCurrency(inputs.annualCostPerTechnician || 0)}`]
     ];
 
     const laborPostData = [
+      ['Work Shifts', inputs.workShiftsPost || 0],
+      ['Days per Year', inputs.daysPerYearPost || 0],
+      ['Hours per Shift', inputs.hoursPerShiftPost || 0],
       ['Number of Operators', inputs.noOfOperatorsPost || 0],
+      ['Hourly Wage per Operator', inputs.hourlyWageOperatorPost || 0],
+      ['Overtime Rate per Hour',inputs.overtimeRatePerHourPost],
+      ['Annual Overtime Hours per Operator',inputs.annualOvertimeHoursperOperatorPost],
       ['Technicians', inputs.techniciansPost || 0],
+      ['Annual Cost per Technician', `${formatCurrency(inputs.annualCostPerTechnicianPost || 0)}`]
     ];
 
     yPosition = drawSection('Labor Configuration', laborCurrentData, laborPostData, yPosition);
@@ -159,28 +181,30 @@ const InfoPopup = ({
     // Materials & Production Section
     const materialsCurrentData = [
       ['Annual Parts Goal', (inputs.annualPartsGoal || 0).toLocaleString()],
-      ['Machine Uptime', `${inputs.machineUptimeCurrent || 0}%`],
-      ['Scrap Percentage', `${inputs.scrapPercentageCurrent || 0}%`],
-      ['Material Cost per Unit', `$${(inputs.materialCostPerUnit || 0).toLocaleString()}`],
+      ['Machine Uptime', `${formatPercentage(inputs.machineUptimeCurrent || 0)}`],
+      ['Scrap Percentage', `${formatPercentage(inputs.scrapPercentageCurrent || 0)}`],
+      ['Material Cost per Unit', `${formatCurrency(inputs.materialCostPerUnit || 0)}`],
     ];
 
     const materialsPostData = [
-      ['Machine Uptime', `${inputs.machineUptimePost || 0}%`],
-      ['Scrap Percentage', `${inputs.scrapPercentagePost || 0}%`],
-      ['Material Cost per Unit', `$${(inputs.materialCostPerUnitPost || 0).toLocaleString()}`]
+      ['Machine Uptime', `${formatPercentage(inputs.machineUptimePost || 0)}`],
+      ['Scrap Percentage', `${formatPercentage(inputs.scrapPercentagePost || 0)}`],
+      ['Material Cost per Unit', `${formatCurrency(inputs.materialCostPerUnitPost || 0)}`],
+      ['Margin % of Material Unit Cost', `${formatPercentage(inputs.marginPercentOfMaterialUnitCost || 0)}`]
     ];
 
     yPosition = drawSection('Materials & Production', materialsCurrentData, materialsPostData, yPosition);
 
     // Investment & Revenue Section
     const investmentCurrentData = [
-      ['New Equipment Cost', `$${(inputs.newEquipmentCost || 0).toLocaleString()}`],
+      ['New Equipment Cost', `${formatCurrency(inputs.newEquipmentCost || 0)}`],
       // ['Sell Price per Part', `$${(inputs.sellPricePerPartCurrent || 0).toLocaleString()}`]
     ];
 
     const investmentPostData = [
-      ['New Equipment Cost', `$${(inputs.newEquipmentCost || 0).toLocaleString()}`],
+      // ['New Equipment Cost', `$${(inputs.newEquipmentCost || 0).toLocaleString()}`],
       // ['Sell Price per Part', `$${(inputs.sellPricePerPartPost || 0).toLocaleString()}`]
+      ['Discount Rate', `${formatPercentage(inputs.discountRate || 0)}`]
     ];
 
     yPosition = drawSection('Investment & Revenue', investmentCurrentData, investmentPostData, yPosition);
@@ -211,29 +235,29 @@ const InfoPopup = ({
     doc.setFont(undefined, 'bold');
     doc.text('Current vs Post Install', leftTableX, yPosition);
     
-    // Right side: 3-Year ROI
-    doc.text('3-Year ROI', rightTableX, yPosition);
+    // Right side: 3-Year Cashflow
+    doc.text('3-Year Cashflow', rightTableX, yPosition);
     yPosition += 15;
 
     // Current vs Post Install table data
     const comparisonData = [
-      ['Total Labor Cost', 
-       `$${(results.currentTotalLaborCost || 0).toLocaleString()}`, 
-       `$${(results.postTotalLaborCost || 0).toLocaleString()}`],
-      ['Material Cost', 
-       `$${(results.currentMaterialCost || 0).toLocaleString()}`, 
-       `$${(results.postMaterialCost || 0).toLocaleString()}`],
-      ['Material Waste Cost', 
-       `$${(results.currentMaterialWasteCost || 0).toLocaleString()}`, 
-       `$${(results.postMaterialWasteCost || 0).toLocaleString()}`],
+      ['Annual Material Spend', 
+       `${formatCurrency(results.annualMaterialSpendCurrent || 0)}`, 
+       `${formatCurrency(results.annualMaterialSpendPost || 0)}`],
+      ['Annual Labor Cost', 
+       `${formatCurrency(results.annualLaborCostCurrent || 0)}`, 
+       `${formatCurrency(results.annualLaborCostPost || 0)}`],
+      ['Total Operating Cost', 
+       `${formatCurrency(results.totalOperatingCostCurrent || 0)}`, 
+       `${formatCurrency(results.totalOperatingCostPost || 0)}`],
     ];
 
     // ROI table data
-    const roiData = [
-      ['Year 1', `$${(results.yearlyROI[0] || 0).toLocaleString()}`],
-      ['Year 2', `$${(results.yearlyROI[1] || 0).toLocaleString()}`],
-      ['Year 3', `$${(results.yearlyROI[2] || 0).toLocaleString()}`],
-      ['Total ROI', `$${(results.totalROIOver3Years || 0).toLocaleString()}`]
+    const cashflowData = [
+      ['Year 1', `${formatCurrency(results.cashFlows[1].nominal || 0)}`],
+      ['Year 2', `${formatCurrency(results.cashFlows[2].nominal || 0)}`],
+      ['Year 3', `${formatCurrency(results.cashFlows[3].nominal || 0)}`],
+      ['Total Cashflow', `${formatCurrency(results.totalROIOver3Years || 0)}`]
     ];
 
     let leftTableY = yPosition;
@@ -251,7 +275,7 @@ const InfoPopup = ({
 
     // Draw right table headers
     doc.text('Year', rightTableX, rightTableY);
-    doc.text('ROI ', rightTableX + 60, rightTableY, { align: 'right' });
+    doc.text('Cashflow ', rightTableX + 60, rightTableY, { align: 'right' });
     rightTableY += 12;
 
     // Draw left table (Current vs Post Install)
@@ -267,8 +291,8 @@ const InfoPopup = ({
       leftTableY += 7;
     });
 
-    // Draw right table (3-Year ROI)
-    roiData.forEach((row) => {
+    // Draw right table (3-Year Cashflow)
+    cashflowData.forEach((row) => {
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       doc.text(row[0], rightTableX, rightTableY);
@@ -296,22 +320,51 @@ const InfoPopup = ({
       doc.setFontSize(14);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(255,255,255);
+      doc.text("Savings Breakdown", pageWidth / 2, yPosition + 10, { align: 'center' });
+      yPosition += 25;
+      doc.setTextColor(0, 0, 0);
+
+      const savingsBreakdown = [
+        ['Labor Savings', `${formatCurrency(results.laborSavings || 0)}`],
+        ['Material Savings', `${formatCurrency(results.materialSavings || 0)}`],
+        ['Contribution per Additional Unit', `${formatCurrency(results.contributionPerAdditionalUnit || 0)}`],
+        ['Additional Contribution from Units', `${formatCurrency(results.additionalContributionFromUnits || 0)}`]
+      ];
+
+      savingsBreakdown.forEach(([label, value]) => {
+        // rightTableY += 12;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(label + ':', margin+4, yPosition);
+        doc.setFont(undefined, 'bold');
+        doc.text(value, margin + 90, yPosition, { align: 'right' });
+        yPosition += 7;
+      });
+
+      yPosition += 10;
+
+      doc.setFillColor(111, 190, 76);
+      doc.rect(0, yPosition, pageWidth, 15, 'F');
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(255,255,255);
       doc.text("Key Performance Indicators", pageWidth / 2, yPosition + 10, { align: 'center' });
       yPosition += 25;
       doc.setTextColor(0, 0, 0);
 
+
     const keyMetrics = [
-      ['Annual Cost Savings', `$${(results.annualSavings || 0).toLocaleString()}`],
+      ['ROI Percentage', `${formatPercentage(results.roiPercentage3Year || 0)}`],
       ['Payback Period', typeof results.paybackPeriod === 'number' ? `${formatYears(results.paybackPeriod)} ` : 'N/A'],
-      ['Internal Rate of Return', `${(results.annualIRR || 0).toFixed(1)}%`],
-      ['ROI Percentage', `$${(results.roiPercentage3Year || 0).toLocaleString()}`]
+      ['Internal Rate of Return', `${formatPercentage(results.annualIRR || 0)}`],
+      ['Net Present Value (NPV)', `${formatCurrency(results.npv || 0)}`]
     ];
 
     keyMetrics.forEach(([label, value]) => {
       // rightTableY += 12;
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
-      doc.text(label + ':', margin, yPosition);
+      doc.text(label + ':', margin+4, yPosition);
       doc.setFont(undefined, 'bold');
       doc.text(value, margin + 90, yPosition, { align: 'right' });
       yPosition += 7;

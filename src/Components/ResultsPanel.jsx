@@ -15,7 +15,7 @@ const ResultsPanel = ({ results }) => {
     return new Intl.NumberFormat("en-US", {
       style: "percent",
       minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
+      maximumFractionDigits: 2,
     }).format(value / 100);
   };
 
@@ -34,9 +34,9 @@ const ResultsPanel = ({ results }) => {
       </div> */}
       <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6 text-center">
         <DollarSign className="w-10 h-10 text-darkBlue mx-auto mb-3" />
-        <p className="text-sm text-darkBlue font-medium">Annual Cost Savings</p>
+        <p className="text-sm text-darkBlue font-medium">ROI Percentage</p>
         <p className="text-3xl font-bold text-darkBlue">
-          {formatCurrency(results.annualSavings)}
+          {formatPercentage(results.roiPercentage3Year)}
         </p>
         <p className="text-xs text-gray-600 mt-1">
           Based on labor & material savings only
@@ -91,6 +91,18 @@ const ResultsPanel = ({ results }) => {
             <span className="text-darkBlue">Material Savings:</span>
             <span className="font-bold text-lightGreen">
               {formatCurrency(results.materialSavings)}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-darkBlue">Contribution per Additional Unit (auto):</span>
+            <span className="font-bold text-lightGreen">
+              {formatCurrency(results.contributionPerAdditionalUnit || 0)}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-darkBlue">Additional Contribution from Units:</span>
+            <span className="font-bold text-lightGreen">
+              {formatCurrency(results.additionalContributionFromUnits || 0)}
             </span>
           </div>
           {/* <div className="flex justify-between text-sm">
