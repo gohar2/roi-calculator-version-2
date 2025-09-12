@@ -81,6 +81,12 @@ const ResultsPanel = ({ results }) => {
       <div className="space-y-3">
         <h3 className="font-semibold text-darkBlue">Savings Breakdown</h3>
         <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+            <span className="text-darkBlue">Total Annual Savings:</span>
+            <span className="font-bold text-lightGreen">
+              {formatCurrency(results.annualSavings)}
+            </span>
+          </div>
           <div className="flex justify-between text-sm">
             <span className="text-darkBlue">Labor Savings:</span>
             <span className="font-bold text-lightGreen">
@@ -93,8 +99,8 @@ const ResultsPanel = ({ results }) => {
               {formatCurrency(results.materialSavings)}
             </span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-darkBlue">Contribution per Additional Unit (auto):</span>
+          {/* <div className="flex justify-between text-sm">
+            <span className="text-darkBlue">Contribution per Additional Unit:</span>
             <span className="font-bold text-lightGreen">
               {formatCurrency(results.contributionPerAdditionalUnit || 0)}
             </span>
@@ -104,7 +110,7 @@ const ResultsPanel = ({ results }) => {
             <span className="font-bold text-lightGreen">
               {formatCurrency(results.additionalContributionFromUnits || 0)}
             </span>
-          </div>
+          </div> */}
           {/* <div className="flex justify-between text-sm">
             <span className="text-darkBlue">Material Waste Savings:</span>
             <span className="font-bold text-lightGreen">
