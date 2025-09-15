@@ -533,21 +533,6 @@ const ROICalculator = ({
                     max={100}
                     suffix="$"
                   />
-                  <SliderInput
-                    label="Margin % of Material Unit Cost"
-                    value={inputs.marginPercentOfMaterialUnitCost}
-                    onChange={(value) =>
-                      handleInputChange(
-                        "marginPercentOfMaterialUnitCost",
-                        value
-                      )
-                    }
-                    min={0}
-                    max={100}
-                    suffix="%"
-                    step={0.01}
-                    decimals={2}
-                  />
                 </div>
 
                 <div>
@@ -842,6 +827,30 @@ const ROICalculator = ({
                   step={0.01}
                   decimals={2}
                 />
+              </div>
+            </div>       
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="flex items-center space-x-3 mb-8">
+                <Factory className="w-6 h-6 text-lightGreen" />
+                <h2 className="text-xl font-bold text-darkBlue">Productivity Gains</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <SliderInput
+                    label="Margin % of Material Unit Cost"
+                    value={inputs.marginPercentOfMaterialUnitCost}
+                    onChange={(value) =>
+                      handleInputChange(
+                        "marginPercentOfMaterialUnitCost",
+                        value
+                      )
+                    }
+                    min={0}
+                    max={100}
+                    suffix="%"
+                    step={0.01}
+                    decimals={2}
+                  />
               </div>
 
               <button
