@@ -184,13 +184,14 @@ const InfoPopup = ({
       ['Machine Uptime', `${formatPercentage(inputs.machineUptimeCurrent || 0)}`],
       ['Scrap Percentage', `${formatPercentage(inputs.scrapPercentageCurrent || 0)}`],
       ['Material Cost per Unit', `${formatCurrency(inputs.materialCostPerUnit || 0)}`],
+      ['Margin % of Material Unit Cost', `${formatPercentage(inputs.marginPercentOfMaterialUnitCost || 0)}`]
     ];
 
     const materialsPostData = [
+      ['Annual Parts Goal', (inputs.annualPartsGoalPost || 0).toLocaleString()],
       ['Machine Uptime', `${formatPercentage(inputs.machineUptimePost || 0)}`],
       ['Scrap Percentage', `${formatPercentage(inputs.scrapPercentagePost || 0)}`],
       ['Material Cost per Unit', `${formatCurrency(inputs.materialCostPerUnitPost || 0)}`],
-      ['Margin % of Material Unit Cost', `${formatPercentage(inputs.marginPercentOfMaterialUnitCost || 0)}`]
     ];
 
     yPosition = drawSection('Materials & Production', materialsCurrentData, materialsPostData, yPosition);

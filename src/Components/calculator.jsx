@@ -96,6 +96,7 @@ const ROICalculator = ({
 
     // Materials
     annualPartsGoal: 100000,
+    annualPartsGoalPost: 100000,
     machineUptimeCurrent: 0.9,
     machineUptimePost: 0.99,
     scrapPercentageCurrent: 0.1,
@@ -285,7 +286,7 @@ const ROICalculator = ({
       (1 + scrapCurrent) *
       calcInputs.materialCostPerUnit;
     const postMaterialCost =
-      calcInputs.annualPartsGoal *
+      (calcInputs.annualPartsGoalPost || calcInputs.annualPartsGoal) *
       (1 + scrapPost) *
       (calcInputs.materialCostPerUnitPost ?? calcInputs.materialCostPerUnit);
 
@@ -294,7 +295,9 @@ const ROICalculator = ({
       calcInputs.annualPartsGoal * uptimeCurrent * (1 - scrapCurrent)
     );
     const goodUnitsPost = Math.round(
-      calcInputs.annualPartsGoal * uptimePost * (1 - scrapPost)
+      (calcInputs.annualPartsGoalPost || calcInputs.annualPartsGoal) *
+      uptimePost *
+      (1 - scrapPost)
     );
     const deltaGoodUnits = goodUnitsPost - goodUnitsCurrent;
     // Unit-value benefit removed from calculation per request
@@ -530,12 +533,36 @@ const ROICalculator = ({
                     max={100}
                     suffix="$"
                   />
+                  <SliderInput
+                    label="Margin % of Material Unit Cost"
+                    value={inputs.marginPercentOfMaterialUnitCost}
+                    onChange={(value) =>
+                      handleInputChange(
+                        "marginPercentOfMaterialUnitCost",
+                        value
+                      )
+                    }
+                    min={0}
+                    max={100}
+                    suffix="%"
+                    step={0.01}
+                    decimals={2}
+                  />
                 </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-darkBlue mb-4">
                     Post Install
                   </h3>
+                  <SliderInput
+                    label="Annual Parts Goal"
+                    value={inputs.annualPartsGoalPost}
+                    onChange={(value) =>
+                      handleInputChange("annualPartsGoalPost", value)
+                    }
+                    min={0}
+                    max={5000000}
+                  />
                   <SliderInput
                     label="Machine Uptime"
                     value={inputs.machineUptimePost}
@@ -569,21 +596,6 @@ const ROICalculator = ({
                     min={0}
                     max={100}
                     suffix="$"
-                  />
-                  <SliderInput
-                    label="Margin % of Material Unit Cost"
-                    value={inputs.marginPercentOfMaterialUnitCost}
-                    onChange={(value) =>
-                      handleInputChange(
-                        "marginPercentOfMaterialUnitCost",
-                        value
-                      )
-                    }
-                    min={0}
-                    max={100}
-                    suffix="%"
-                    step={0.01}
-                    decimals={2}
                   />
                 </div>
               </div>
@@ -744,7 +756,7 @@ const ROICalculator = ({
                     max={20}
                   />
                   <SliderInput
-                    label="Hourly Wage Per Operator (Post)"
+                    label="Hourly Wage Per Operator"
                     value={inputs.hourlyWageOperatorPost}
                     onChange={(value) =>
                       handleInputChange("hourlyWageOperatorPost", value)
@@ -789,7 +801,7 @@ const ROICalculator = ({
                     max={5}
                   />
                   <SliderInput
-                    label="Annual Cost per Technician (Post)"
+                    label="Annual Cost per Technician"
                     value={inputs.annualCostPerTechnicianPost}
                     onChange={(value) =>
                       handleInputChange("annualCostPerTechnicianPost", value)
