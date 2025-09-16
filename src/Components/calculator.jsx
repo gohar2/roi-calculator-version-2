@@ -234,6 +234,8 @@ const ROICalculator = ({
       if (value == null || isNaN(value)) return 0;
       return value > 1 ? value / 100 : value;
     };
+    // Mirror Excel percent handling for Good Units: uptime and scrap are percents
+    const toPercentFraction = (v) => (v > 1 ? v / 100 : v || 0);
     const scrapCurrent = calcInputs.scrapPercentageCurrent;
     const scrapPost = calcInputs.scrapPercentagePost;
     const uptimeCurrent = calcInputs.machineUptimeCurrent;
@@ -295,9 +297,7 @@ const ROICalculator = ({
       calcInputs.annualPartsGoal * uptimeCurrent * (1 - scrapCurrent)
     );
     const goodUnitsPost = Math.round(
-      (calcInputs.annualPartsGoalPost || calcInputs.annualPartsGoal) *
-      uptimePost *
-      (1 - scrapPost)
+      calcInputs.annualPartsGoalPost  * uptimePost * (1 - scrapPost)
     );
     const deltaGoodUnits = goodUnitsPost - goodUnitsCurrent;
     // Unit-value benefit removed from calculation per request
@@ -316,45 +316,71 @@ const ROICalculator = ({
     const laborSavings = Math.round(currentTotalLaborCost - postTotalLaborCost);
     const materialSavings = currentMaterialCost - postMaterialCost;
 
-    // Contribution per Additional Unit (auto): margin % of material unit cost × variable cost per unit
-    const marginPct = normalizePercent(
-      calcInputs.marginPercentOfMaterialUnitCost
-    );
+    // Contribution per Additional Unit (Excel-like IF logic)
+    // B30: variable cost per unit = IF(B25<=0,0, I4/B25)
     const variableCostPerUnit = goodUnitsPost <= 0 ? 0 : postMaterialCost / goodUnitsPost;
+    // B29: margin percent as fraction (treat numeric like Excel percent input)
+    const marginPctFraction =
+      calcInputs.marginPercentOfMaterialUnitCost > 1
+        ? calcInputs.marginPercentOfMaterialUnitCost / 100
+        : calcInputs.marginPercentOfMaterialUnitCost || 0;
+    // B27: IF(OR(B30="",B30=0,B29=""),0,B30*B29)
     const contributionPerAdditionalUnit =
-      marginPct > 0 && variableCostPerUnit > 0
-        ? marginPct * variableCostPerUnit
-        : 0;
+      variableCostPerUnit === 0 || marginPctFraction === 0
+        ? 0
+        : marginPctFraction * variableCostPerUnit;
     const additionalContributionFromUnits = deltaGoodUnits * contributionPerAdditionalUnit;
 
 
-    const year1ROI = annualSavings + (deltaGoodUnits * contributionPerAdditionalUnit);
-    const year2ROI = annualSavings + (deltaGoodUnits * contributionPerAdditionalUnit);
-    const year3ROI = annualSavings + (deltaGoodUnits * contributionPerAdditionalUnit);
+    // Cash Flows sheet-like IF handling for yearly cash flows
+    // Year 0 handled separately below.
+    // Excel has: Year n benefit = B16 + (B26*B27) + IF(B5=n, B9, 0)
+    // Here, B16 maps to annualSavings; (B26*B27) is additionalContributionFromUnits; B9 is unitValueBenefit (0 here)
+    const baseYearBenefit = annualSavings + (deltaGoodUnits * contributionPerAdditionalUnit);
+    const oneTimeBenefit = 0; // keep parity with current sheet setup where unit value benefit is 0
+    const yearCount = 3; // Inputs_Results!$B$5 equivalent currently fixed to 3 years
+    const year1ROI = yearCount >= 1 ? baseYearBenefit + (yearCount === 1 ? oneTimeBenefit : 0) : "";
+    const year2ROI = yearCount >= 2 ? baseYearBenefit + (yearCount === 2 ? oneTimeBenefit : 0) : "";
+    const year3ROI = yearCount >= 3 ? baseYearBenefit + (yearCount === 3 ? oneTimeBenefit : 0) : "";
 
     // Discounted ROI (optional, based on discountRate input)
     const r = (calcInputs.discountRate || 0) / 100;
-    const disc = (t) => (r > 0 ? 1 / Math.pow(1 + r, t) : 1);
+    const isBlankOrZero = (v) => v === "" || v === 0;
+    const disc = (t, cf) => (isBlankOrZero(cf) ? "" : 1 / Math.pow(1 + r, t));
     const discountedYearlyROI = [
-      year1ROI * disc(1),
-      year2ROI * disc(2),
-      year3ROI * disc(3),
+      isBlankOrZero(year1ROI) ? 0 : year1ROI * (disc(1, year1ROI) || 1),
+      isBlankOrZero(year2ROI) ? 0 : year2ROI * (disc(2, year2ROI) || 1),
+      isBlankOrZero(year3ROI) ? 0 : year3ROI * (disc(3, year3ROI) || 1),
     ];
     const discountedTotalROIOver3Years =
       discountedYearlyROI[0] + discountedYearlyROI[1] + discountedYearlyROI[2];
 
-    const totalROIOver3Years = year1ROI + year2ROI + year3ROI;
+    const totalROIOver3Years =
+      (year1ROI === "" ? 0 : year1ROI) +
+      (year2ROI === "" ? 0 : year2ROI) +
+      (year3ROI === "" ? 0 : year3ROI);
     const netCashFlow3Year = totalROIOver3Years - calcInputs.newEquipmentCost;
 
-    const roiPercentage3Year =
-      (netCashFlow3Year / calcInputs.newEquipmentCost) * 100;
-
-    // Build nominal cash flows for IRR calculation
+    // ROI per Excel:
+    // =IF(B4<0,(SUM(OFFSET(B4,1,0,Inputs_Results!$B$5,1))+B4)/-B4,"")
+    // Here B4 is year0Outflow; years count is 3
     const year0Outflow = -(
       (calcInputs.newEquipmentCost || 0) +
       (calcInputs.existingEquipmentWriteOff || 0)
     );
-    const nominalFlows = [year0Outflow, year1ROI, year2ROI, year3ROI];
+    const sumYears = totalROIOver3Years;
+    const roiPercentage3Year =
+      year0Outflow < 0
+        ? ((sumYears + year0Outflow) / -year0Outflow) * 100
+        : "";
+
+    // Build nominal cash flows for IRR calculation
+    const nominalFlows = [
+      year0Outflow,
+      year1ROI === "" ? 0 : year1ROI,
+      year2ROI === "" ? 0 : year2ROI,
+      year3ROI === "" ? 0 : year3ROI,
+    ];
 
     // Calculate IRR using improved method
     const irrRate = computeIRR(nominalFlows);
@@ -364,14 +390,32 @@ const ROICalculator = ({
       annualSavings > 0 ? calcInputs.newEquipmentCost / annualSavings : null;
 
     // Cash Flows sheet parity (Year 0 outflow, discounting, cumulative)
-    const discountFactors = [1, disc(1), disc(2), disc(3)];
-    const discountedFlows = nominalFlows.map((v, i) => v * discountFactors[i]);
+    const discountFactors = [
+      1,
+      isBlankOrZero(year1ROI) ? "" : 1 / Math.pow(1 + r, 1),
+      isBlankOrZero(year2ROI) ? "" : 1 / Math.pow(1 + r, 2),
+      isBlankOrZero(year3ROI) ? "" : 1 / Math.pow(1 + r, 3),
+    ];
+    const discountedFlows = nominalFlows.map((v, i) => {
+      const df = discountFactors[i];
+      return df === "" ? 0 : v * df;
+    });
     const cumulativeNominal = nominalFlows.reduce((arr, v, i) => {
-      arr.push((arr[i - 1] ?? 0) + v);
+      if (i === 0) {
+        arr.push(v);
+      } else {
+        const shouldBlank = discountFactors[i] === "" || v === 0;
+        arr.push(shouldBlank ? "" : ((arr[i - 1] === "" ? 0 : arr[i - 1]) + v));
+      }
       return arr;
     }, []);
     const cumulativeDiscounted = discountedFlows.reduce((arr, v, i) => {
-      arr.push((arr[i - 1] ?? 0) + v);
+      if (i === 0) {
+        arr.push(v);
+      } else {
+        const shouldBlank = discountFactors[i] === "" || nominalFlows[i] === 0;
+        arr.push(shouldBlank ? "" : ((arr[i - 1] === "" ? 0 : arr[i - 1]) + v));
+      }
       return arr;
     }, []);
     const npv = discountedFlows.reduce((a, b) => a + b, 0);
