@@ -14,14 +14,14 @@ const validateInputs = (inputs) => {
 
   // Validate percentages are between 0-100
   if (
-    inputs.scrapPercentageCurrent < 0 ||
-    inputs.scrapPercentageCurrent > 100
+    inputs.scrapPercentageCurrent < 0 
+    || inputs.scrapPercentageCurrent > 1
   ) {
-    errors.push("Current scrap percentage must be between 0-100");
+    errors.push("Current scrap percentage must be between 0-1");
   }
 
-  if (inputs.machineUptimeCurrent < 0 || inputs.machineUptimeCurrent > 100) {
-    errors.push("Machine uptime must be between 0-100");
+  if (inputs.machineUptimeCurrent < 0 || inputs.machineUptimeCurrent > 1) {
+    errors.push("Machine uptime must be between 0-1");
   }
 
   // Validate labor inputs
@@ -236,10 +236,20 @@ const ROICalculator = ({
     };
     // Mirror Excel percent handling for Good Units: uptime and scrap are percents
     const toPercentFraction = (v) => (v > 1 ? v / 100 : v || 0);
-    const scrapCurrent = calcInputs.scrapPercentageCurrent;
-    const scrapPost = calcInputs.scrapPercentagePost;
-    const uptimeCurrent = calcInputs.machineUptimeCurrent;
-    const uptimePost = calcInputs.machineUptimePost;
+    // const scrapCurrent = calcInputs.scrapPercentageCurrent;
+    // const scrapPost = calcInputs.scrapPercentagePost;
+    // const uptimeCurrent = calcInputs.machineUptimeCurrent;
+    // const uptimePost = calcInputs.machineUptimePost;
+    const toDecimal = (percentValue) => {
+      const value = percentValue || 0;
+      // If value is already a decimal (0-1), use it as is
+      // If value is a percentage (1-100), convert to decimal
+      return value <= 1 ? value : value / 100;
+    };
+    const scrapCurrent = toDecimal(calcInputs.scrapPercentageCurrent);
+    const scrapPost = toDecimal(calcInputs.scrapPercentagePost);
+    const uptimeCurrent = toDecimal(calcInputs.machineUptimeCurrent);
+    const uptimePost = toDecimal(calcInputs.machineUptimePost);
 
     // Regular labor costs (separate current/post)
     const totalWorkingHoursCurrent =
@@ -264,9 +274,8 @@ const ROICalculator = ({
       calcInputs.overtimeRatePerHour;
     const postOvertimeCost =
       calcInputs.noOfOperatorsPost *
-      (calcInputs.annualOvertimeHoursperOperatorPost ||
-        calcInputs.annualOvertimeHoursperOperator) *
-      (calcInputs.overtimeRatePerHourPost || calcInputs.overtimeRatePerHour);
+      (calcInputs.annualOvertimeHoursperOperatorPost !== undefined ? calcInputs.annualOvertimeHoursperOperatorPost : calcInputs.annualOvertimeHoursperOperator) *
+      (calcInputs.overtimeRatePerHourPost !== undefined ? calcInputs.overtimeRatePerHourPost : calcInputs.overtimeRatePerHour);
 
     // Technician costs
     const currentTechnicianCost =
@@ -281,6 +290,21 @@ const ROICalculator = ({
       currentRegularLaborCost + currentOvertimeCost + currentTechnicianCost;
     const postTotalLaborCost =
       postRegularLaborCost + postOvertimeCost + postTechnicianCost;
+
+      console.log("Overtime Debug:", {
+        currentOvertimeCost,
+        postOvertimeCost,
+        currentRegularLaborCost,
+        postRegularLaborCost,
+        currentTotalLaborCost,
+        postTotalLaborCost,
+        laborSavings: currentTotalLaborCost - postTotalLaborCost,
+        overtimeSavings: currentOvertimeCost - postOvertimeCost,
+        // Debug Post Install values
+        noOfOperatorsPost: calcInputs.noOfOperatorsPost,
+        annualOvertimeHoursperOperatorPost: calcInputs.annualOvertimeHoursperOperatorPost,
+        overtimeRatePerHourPost: calcInputs.overtimeRatePerHourPost
+      });
 
     // Excel-aligned Material Calculations (consolidate scrap into cost)
     const currentMaterialCost =
@@ -549,10 +573,11 @@ const ROICalculator = ({
                       handleInputChange("machineUptimeCurrent", value)
                     }
                     min={0}
-                    max={100}
+                    max={1}
                     suffix="%"
                     step={0.01}
                     decimals={2}
+                    isDecimalPercentage={true}
                   />
 
                   <SliderInput
@@ -562,10 +587,11 @@ const ROICalculator = ({
                       handleInputChange("scrapPercentageCurrent", value)
                     }
                     min={0}
-                    max={100}
+                    max={1}
                     suffix="%"
                     step={0.01}
                     decimals={2}
+                    isDecimalPercentage={true}
                   />
                   <SliderInput
                     label="Material Cost per Unit"
@@ -599,10 +625,11 @@ const ROICalculator = ({
                       handleInputChange("machineUptimePost", value)
                     }
                     min={0}
-                    max={100}
+                    max={1}
                     suffix="%"
                     step={0.01}
                     decimals={2}
+                    isDecimalPercentage={true}
                   />
                   <SliderInput
                     label="Scrap Percentage"
@@ -611,10 +638,11 @@ const ROICalculator = ({
                       handleInputChange("scrapPercentagePost", value)
                     }
                     min={0}
-                    max={100}
+                    max={1}
                     suffix="%"
                     step={0.01}
                     decimals={2}
+                    isDecimalPercentage={true}
                   />
                   <SliderInput
                     label="Material Cost per Unit (Post)"

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as Slider from '@radix-ui/react-slider';
 
-const SliderInput = ({ label, value, onChange, min, max, step = 1, suffix = '', decimals = 0 }) => {
+const SliderInput = ({ label, value, onChange, min, max, step = 1, suffix = '', decimals = 0, isDecimalPercentage = false }) => {
   const [inputValue, setInputValue] = useState(value);
 
   // Update input value when prop value changes
@@ -41,6 +41,11 @@ const SliderInput = ({ label, value, onChange, min, max, step = 1, suffix = '', 
   const formatDisplayValue = (val) => {
     if (suffix === '$') {
       return `$${val.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+    }
+    if (suffix === '%' && isDecimalPercentage) {
+      // Convert decimal to percentage for display (0.5 -> 50%) - only for specific fields
+      const percentageValue = val * 100;
+      return percentageValue.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + suffix;
     }
     return val.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + suffix;
   };
