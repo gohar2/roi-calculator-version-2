@@ -411,7 +411,7 @@ const ROICalculator = ({
     const annualIRR = irrRate != null ? irrRate * 100 : null;
 
     const paybackPeriod =
-      annualSavings > 0 ? calcInputs.newEquipmentCost / annualSavings : null;
+      baseYearBenefit > 0 ? calcInputs.newEquipmentCost / baseYearBenefit : null;
 
     // Cash Flows sheet parity (Year 0 outflow, discounting, cumulative)
     const discountFactors = [
