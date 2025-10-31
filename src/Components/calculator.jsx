@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Calculator, TrendingUp, Users, Factory, Package } from "lucide-react";
+import * as Switch from '@radix-ui/react-switch';
 import SliderInput from "./SliderInput";
 import DetailedResults from "./DetailedResults";
 import ResultsPanel from "./ResultsPanel";
 import InfoPopup from "./InfoPopup";
+import ToggleButton from "./ToggleButton";
 
 const validateInputs = (inputs) => {
   const errors = [];
@@ -72,6 +74,8 @@ const ROICalculator = ({
 }) => {
   const [errors, setErrors] = useState([]);
   const [warnings, setWarnings] = useState([]);
+  const [isInsourcing, setIsInsourcing] = useState(false);
+  const previousValuesRef = useRef({});
   const [inputs, setInputs] = useState({
     // Labor - Current
     workShifts: 1,
@@ -509,7 +513,98 @@ const ROICalculator = ({
   }, [calcInputs]);
 
   const handleInputChange = (field, value) => {
+    // If insourcing is enabled and user tries to change a protected field, keep it at 0
+    if (isInsourcing) {
+      const protectedFields = [
+        'scrapPercentageCurrent',
+        'scrapPercentagePost',
+        'machineUptimeCurrent',
+        'machineUptimePost',
+        'noOfOperatorsCurrent',
+        'noOfOperatorsPost',
+        'techniciansCurrent',
+        'techniciansPost',
+        'annualOvertimeHoursperOperator',
+        'annualOvertimeHoursperOperatorPost',
+      ];
+      if (protectedFields.includes(field)) {
+        return; // Don't allow changes to protected fields when insourcing is enabled
+      }
+    }
     setInputs((prev) => ({ ...prev, [field]: parseFloat(value) || 0 }));
+  };
+
+  // Ensure protected fields stay at 0 when insourcing is enabled
+  useEffect(() => {
+    if (isInsourcing) {
+      // Set all protected fields to 0 when insourcing is enabled
+      setInputs((prev) => ({
+        ...prev,
+        scrapPercentageCurrent: 0,
+        scrapPercentagePost: 0,
+        machineUptimeCurrent: 0,
+        machineUptimePost: 0,
+        noOfOperatorsCurrent: 0,
+        noOfOperatorsPost: 0,
+        techniciansCurrent: 0,
+        techniciansPost: 0,
+        annualOvertimeHoursperOperator: 0,
+        annualOvertimeHoursperOperatorPost: 0,
+      }));
+    }
+  }, [isInsourcing]);
+
+  // Handle insourcing toggle - save/restore values when toggling
+  const handleInsourcingToggle = (checked) => {
+    if (checked) {
+      // Only save values if insourcing is currently disabled
+      // This ensures we capture the real values BEFORE they get set to 0
+      if (!isInsourcing) {
+        // Save current values synchronously BEFORE setting isInsourcing state
+        // This is critical - we must save BEFORE the state change triggers the useEffect
+        const valuesToSave = {
+          scrapPercentageCurrent: inputs.scrapPercentageCurrent,
+          scrapPercentagePost: inputs.scrapPercentagePost,
+          machineUptimeCurrent: inputs.machineUptimeCurrent,
+          machineUptimePost: inputs.machineUptimePost,
+          noOfOperatorsCurrent: inputs.noOfOperatorsCurrent,
+          noOfOperatorsPost: inputs.noOfOperatorsPost,
+          techniciansCurrent: inputs.techniciansCurrent,
+          techniciansPost: inputs.techniciansPost,
+          annualOvertimeHoursperOperator: inputs.annualOvertimeHoursperOperator,
+          annualOvertimeHoursperOperatorPost: inputs.annualOvertimeHoursperOperatorPost,
+        };
+        previousValuesRef.current = valuesToSave;
+        console.log('Saving values for restoration:', valuesToSave);
+      }
+      
+      // Now set isInsourcing to true (which will trigger useEffect to set values to 0)
+      setIsInsourcing(true);
+    } else {
+      // Disable insourcing first
+      setIsInsourcing(false);
+      
+      // Restore previous values directly in the handler
+      // Use setTimeout to ensure this happens after state updates are processed
+      setTimeout(() => {
+        const savedValues = previousValuesRef.current;
+        if (savedValues && Object.keys(savedValues).length > 0) {
+          console.log('Restoring values:', savedValues);
+          setInputs((prev) => {
+            const restored = {
+              ...prev,
+              ...savedValues,
+            };
+            console.log('Restored inputs:', restored);
+            return restored;
+          });
+          // Clear the ref after restoration
+          previousValuesRef.current = {};
+        } else {
+          console.log('No saved values to restore');
+        }
+      }, 0);
+    }
   };
 
   const handleCalculate = () => {
@@ -543,6 +638,33 @@ const ROICalculator = ({
         <div className="calculator-container grid gap-8">
           {/* Input Panel */}
           <div className="space-y-8">
+            {/* Insourcing Toggle */}
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-darkBlue mb-2">
+                    Insourcing?
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    When enabled, automatically sets Scrap, Machine Uptime, and Labor values to 0
+                  </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <label htmlFor="insourcing-toggle" className="text-sm font-medium text-darkBlue">
+                    {isInsourcing ? "Yes" : "No"}
+                  </label>
+                  <Switch.Root 
+                    id="insourcing-toggle"
+                    checked={isInsourcing} 
+                    onCheckedChange={handleInsourcingToggle}
+                    className={`w-11 h-6 ${isInsourcing ? "bg-lightGreen" : "bg-zinc-400"} rounded-full relative data-[state=checked]:toggle-button-bg outline-none cursor-pointer`}
+                  >
+                    <Switch.Thumb className="block w-5 h-5 bg-white rounded-full transition-transform duration-100 translate-x-0.5 will-change-transform data-[state=checked]:translate-x-[22px]" />
+                  </Switch.Root>
+                </div>
+              </div>
+            </div>
+
             {/* Materials Section */}
             <div className="bg-white rounded-2xl shadow-xl p-8">
               <div className="flex items-center space-x-3 mb-8">
@@ -753,6 +875,8 @@ const ROICalculator = ({
                     }
                     min={0}
                     max={5}
+                    step={0.01}
+                    decimals={2}
                   />
                   <SliderInput
                     label="Annual Cost per Technician"
@@ -856,6 +980,8 @@ const ROICalculator = ({
                     }
                     min={0}
                     max={5}
+                    step={0.01}
+                    decimals={2}
                   />
                   <SliderInput
                     label="Annual Cost per Technician"
@@ -898,6 +1024,7 @@ const ROICalculator = ({
                   suffix="%"
                   step={0.01}
                   decimals={2}
+                  infoText="Enter expected annual return or cost of capital. 10% is standard."
                 />
               </div>
             </div>       
@@ -922,6 +1049,7 @@ const ROICalculator = ({
                     suffix="%"
                     step={0.01}
                     decimals={2}
+                    infoText="Enter average profit margin per part after variable costs. A safe minimum is 42%"
                   />
               </div>
 

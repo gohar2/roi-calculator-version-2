@@ -326,10 +326,9 @@ const InfoPopup = ({
       doc.setTextColor(0, 0, 0);
 
       const savingsBreakdown = [
+        ['Total Annual Savings:', `${formatCurrency(results.annualSavings || 0)}`],
         ['Labor Savings', `${formatCurrency(results.laborSavings || 0)}`],
         ['Material Savings', `${formatCurrency(results.materialSavings || 0)}`],
-        ['Contribution per Additional Unit', `${formatCurrency(results.contributionPerAdditionalUnit || 0)}`],
-        ['Additional Contribution from Units', `${formatCurrency(results.additionalContributionFromUnits || 0)}`]
       ];
 
       savingsBreakdown.forEach(([label, value]) => {

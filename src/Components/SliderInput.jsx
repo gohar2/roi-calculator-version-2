@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import * as Slider from '@radix-ui/react-slider';
+import InfoTooltip from './InfoTooltip';
 
-const SliderInput = ({ label, value, onChange, min, max, step = 1, suffix = '', decimals = 0, isDecimalPercentage = false }) => {
+const SliderInput = ({ label, value, onChange, min, max, step = 1, suffix = '', decimals = 0, isDecimalPercentage = false, infoText }) => {
   const [inputValue, setInputValue] = useState(value);
 
   // Update input value when prop value changes
@@ -36,7 +37,6 @@ const SliderInput = ({ label, value, onChange, min, max, step = 1, suffix = '', 
       handleInputBlur();
     }
   };
-
   // Format display value with proper decimal places
   const formatDisplayValue = (val) => {
     if (suffix === '$') {
@@ -53,7 +53,10 @@ const SliderInput = ({ label, value, onChange, min, max, step = 1, suffix = '', 
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-medium text-darkBlue">{label}</label>
+        <label className="text-sm font-medium text-darkBlue flex items-center">
+          {label}
+          {infoText && <InfoTooltip text={infoText} />}
+        </label>
         <div className="flex items-center gap-2">
           <input
             type="number"
