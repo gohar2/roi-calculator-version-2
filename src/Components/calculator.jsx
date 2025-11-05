@@ -833,6 +833,8 @@ const ROICalculator = ({
                     }
                     min={0}
                     max={20}
+                    step={0.01}
+                    decimals={2}
                   />
                   <SliderInput
                     label="Hourly Wage Per Operator"
@@ -935,6 +937,8 @@ const ROICalculator = ({
                     }
                     min={0}
                     max={20}
+                    step={0.01}
+                    decimals={2}
                   />
                   <SliderInput
                     label="Hourly Wage Per Operator"
