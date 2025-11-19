@@ -1,9 +1,23 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Download } from 'lucide-react';
 import logo from '../Images/64469a0e797d2d34b5888432_Machine-Solutions-p-500.jpg';
 import ToggleButton from './ToggleButton';
 
-const Header = ({ setShowPopup, enabled, setEnabled, downloadBtn }) => {
+const Header = ({ setShowPopup, enabled, downloadBtn }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Handle toggle - navigate between calculator-1 and calculator-2
+  const handleToggle = (checked) => {
+    if (checked) {
+      // Toggle ON -> navigate to calculator-2
+      navigate('/calculator-2');
+    } else {
+      // Toggle OFF -> navigate to calculator-1
+      navigate('/calculator-1');
+    }
+  };
 
   return (
     <div className="bg-white shadow-lg border-b sticky top-0 z-10">
@@ -19,7 +33,7 @@ const Header = ({ setShowPopup, enabled, setEnabled, downloadBtn }) => {
             </div>
           </div>
           <div className="flex space-x-2">
-            <ToggleButton checked={enabled} onCheckedChange={setEnabled}/>
+            <ToggleButton checked={enabled} onCheckedChange={handleToggle}/>
             <button 
               onClick={() => setShowPopup(true)}
               className="download-btn p-2 text-lightGreen hover:bg-blue-50 rounded-lg transition-colors "
