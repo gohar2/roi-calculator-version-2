@@ -1,6 +1,7 @@
 {
   "name": "roi-calculator",
   "version": "0.1.0",
+  "homepage": ".",
   "private": true,
   "dependencies": {
     "@radix-ui/react-slider": "^1.3.5",
